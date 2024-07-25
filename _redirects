@@ -1,1 +1,1 @@
-/api/tce/* https://api-dados-abertos.tce.ce.gov.br:splat  200
+/api/tce/* https://api-dados-abertos.tce.ce.gov.br/:splat  200
