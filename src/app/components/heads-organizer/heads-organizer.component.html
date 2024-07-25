@@ -1,0 +1,15 @@
+<mat-card class="w-fit max-w-full">
+  <mat-card-title>
+    <div class="m-4">Reordenar colunas</div>
+  </mat-card-title>
+  <mat-card-content>
+    <div class="head-list" cdkDropList (cdkDropListDropped)="drop($event)">
+      @for (head of heads(); track head) {
+        <div cdkDrag class="head-box">
+          {{ $index + 1 }} - 
+          {{ head | parseSnakeCase }}
+        </div>
+      }
+    </div>
+  </mat-card-content>
+</mat-card>

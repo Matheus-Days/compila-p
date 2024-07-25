@@ -5,13 +5,7 @@ import { RouterOutlet } from '@angular/router';
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet],
-  template: `
-    <h1>Welcome to {{title}}!</h1>
-
-    <router-outlet />
-  `,
-  styles: [],
+  template: ` <router-outlet /> `,
+  styles: []
 })
-export class AppComponent {
-  title = 'compila-p';
-}
+export class AppComponent {}
