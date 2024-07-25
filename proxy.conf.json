@@ -1,5 +1,5 @@
 {
-  "/tce": {
+  "/api/tce": {
     "target": "https://api-dados-abertos.tce.ce.gov.br",
     "secure": false,
     "changeOrigin": true,

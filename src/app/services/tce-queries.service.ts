@@ -15,7 +15,7 @@ import { FetchWorkerMessage, SearchParams } from './fetcher.worker';
   providedIn: 'root'
 })
 export class TceQueriesService {
-  private readonly BASE_URL = '/tce';
+  private readonly BASE_URL = '/api/tce';
   private municipios: Municipio[] = [];
 
   constructor() {}
