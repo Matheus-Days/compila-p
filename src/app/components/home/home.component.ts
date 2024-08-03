@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { TableContratosComponent } from '../table-contratos/table-contratos.component';
+import { TableItensNfComponent } from '../table-itens-nf/table-itens-nf.component';
 
 @Component({
   selector: 'cmp-home',
@@ -7,7 +8,8 @@ import { TableContratosComponent } from '../table-contratos/table-contratos.comp
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
   imports: [
-    TableContratosComponent
+    TableContratosComponent,
+    TableItensNfComponent
   ],
 })
 export class HomeComponent {}
