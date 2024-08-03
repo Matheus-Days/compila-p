@@ -77,7 +77,7 @@ export type ItensNotasFiscais = {
 
 export type ItensNotasFiscaisQueryParams = {
   codigo_municipio: string;
-  exercicio_orcamento: number;
+  exercicio_orcamento: string;
   quantidade: number;
   deslocamento: number;
   codigo_orgao?: string;
@@ -147,11 +147,11 @@ export type NotasEmpenhos = {
 
 export type NotasEmpenhosQueryParams = {
   codigo_municipio: string;
-  data_referencia_empenho: number;
+  data_referencia_empenho: string;
   codigo_orgao: string;
   quantidade: number;
   deslocamento: number;
-  exercicio_orcamento?: number;
+  exercicio_orcamento?: string;
   codigo_unidade?: string;
   data_emissao_empenho?: string;
   numero_empenho?: string;
