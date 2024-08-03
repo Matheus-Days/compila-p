@@ -1,4 +1,4 @@
-import { GenerateContratoDetalhadoParams } from './workbooks.utils';
+import { GenerateContratoDetalhadoParams } from './contratos-detalhados.feature';
 
 onmessage = (event: MessageEvent<GenerateContratoDetalhadoParams>) => {
   const { contratos, contratados } = event.data;
