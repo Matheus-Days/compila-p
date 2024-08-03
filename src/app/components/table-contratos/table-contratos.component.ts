@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -19,8 +19,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { WorkBook } from 'xlsx';
-import { ContratoDetalhado, INITIAL_HEADS_ORDER } from './utils';
 import { HeadsOrganizerComponent } from '../heads-organizer/heads-organizer.component';
 import { WorkbooksStore } from '../../stores/workbooks.store';
 
@@ -94,7 +92,7 @@ export class TableContratosComponent {
   }
 
   clear(): void {
-    this.store.clear();
+    this.store.clearContratosDetalhados();
     this.form.reset();
   }
 
@@ -106,6 +104,6 @@ export class TableContratosComponent {
   }
 
   async search(): Promise<void> {
-    this.store.fetchWorkbookData();
+    this.store.searchContratosDetalhadosData();
   }
 }
