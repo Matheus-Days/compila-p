@@ -13,9 +13,14 @@ import {
 import { computed, inject } from '@angular/core';
 import { withMunicipios } from './municipios.feature';
 import { StoreData } from './workbooks.utils';
-import { Municipio } from '../services/tce.types';
+import {
+  ItensNotasFiscais,
+  Municipio,
+} from '../services/tce.types';
 import { WorkBook } from 'xlsx';
 import { WorkbookService } from '../services/workbook.service';
+import { withItensNotasFiscais } from './itens-notas-fiscais.feature';
+import { withNotasEmpenhos } from './notas-empenhos.feature';
 
 type WorkbookStoreStatus =
   | 'NOT_READY'
@@ -23,12 +28,16 @@ type WorkbookStoreStatus =
   | 'LOADED_MUNICIPIOS'
   | 'ERROR_MUNICIPIOS'
   | 'LOADING_CONTRATOS_DETALHADOS'
+  | 'LOADING_ITENS_NOTAS_FISCAIS'
   | 'LOADED_CONTRATOS_DETALHADOS'
+  | 'LOADED_ITENS_NOTAS_FISCAIS'
   | 'ERROR_CONTRATOS_DETALHADOS'
+  | 'ERROR_ITENS_NOTAS_FISCAIS'
   | 'CREATING_CONTRATOS_DETALHADOS'
-  | 'DOWNLOADING_CONTRATOS_DETALHADOS'
+  | 'CREATING_ITENS_NOTAS_FISCAIS'
   | 'LOADING_NOTAS_EMPENHOS'
   | 'LOADED_NOTAS_EMPENHOS'
+  | 'DOWNLOADING'
   | 'ERROR_NOTAS_EMPENHOS'
   | 'UNKNOWN_STATUS';
 
@@ -49,11 +58,16 @@ export const WorkbooksStore = signalStore(
 
   withContratosDetalhados(),
 
+  withItensNotasFiscais(),
+
+  withNotasEmpenhos(),
+
   withComputed((store) => {
     const status = computed<WorkbookStoreStatus>(() =>
       calculateStatus(
         store.municipios(),
         store.contratosDetalhados(),
+        store.itensNotasFiscais(),
         store._status()
       )
     );
@@ -75,7 +89,7 @@ export const WorkbooksStore = signalStore(
       });
     },
 
-    async createWorkbook() {
+    async createCDWorkbook() {
       const contratosDetalhados = store.contratosDetalhados().list;
 
       if (contratosDetalhados.length === 0)
@@ -93,6 +107,24 @@ export const WorkbooksStore = signalStore(
       });
     },
 
+    async createINFWorkbook() {
+      const itensNotasFiscais = store.itensNotasFiscais().list;
+
+      if (itensNotasFiscais.length === 0)
+        throw new Error('Lista de itens de notas fiscais vazia.');
+
+      patchState(store, { _status: 'creating' });
+      const workbook = await workbookService.createWorkbook({
+        data: itensNotasFiscais,
+        header: store.itensNotasFiscais().headers
+      });
+
+      patchState(store, {
+        workbook,
+        _status: 'idle'
+      });
+    },
+
     async downloadWorkbook(name = 'planilhas.xlsx') {
       const workbook = store.workbook();
       if (!workbook) return;
@@ -102,12 +134,25 @@ export const WorkbooksStore = signalStore(
       patchState(store, { _status: 'idle' });
     },
 
-    async fetchWorkbookData() {
+    async searchContratosDetalhadosData(): Promise<void> {
       const municipio = store.selectedMunicipio();
 
-      if (!municipio) throw new Error('Nenhum município não selecionado.');
+      if (!municipio) throw new Error('Nenhum município selecionado.');
 
       await store.fetchContratosDetalhados(municipio.codigo_municipio);
+    },
+
+    async searchItensNotasFiscais(): Promise<void> {
+      const municipio = store.selectedMunicipio();
+
+      if (!municipio) throw new Error('Nenhum município selecionado.');
+
+      await store.fetchItensNotasFiscais({
+        codigo_municipio: municipio.codigo_municipio,
+        exercicio_orcamento: store.exercicioOrcamento(),
+        deslocamento: 0,
+        quantidade: 100
+      });
     }
   })),
 
@@ -120,17 +165,21 @@ export const WorkbooksStore = signalStore(
 
 function calculateStatus(
   municipios: StoreData<Municipio>,
-  contratosDetalhados: StoreData<ContratoDetalhado>,
+  cd: StoreData<ContratoDetalhado>,
+  inf: StoreData<ItensNotasFiscais>,
   status: WorkbookState['_status']
 ): WorkbookStoreStatus {
-  if (status === 'creating') return 'CREATING_CONTRATOS_DETALHADOS';
-  if (status === 'downloading') return 'DOWNLOADING_CONTRATOS_DETALHADOS';
-  if (contratosDetalhados.status === 'loading')
-    return 'LOADING_CONTRATOS_DETALHADOS';
-  if (contratosDetalhados.status === 'loaded')
-    return 'LOADED_CONTRATOS_DETALHADOS';
-  if (contratosDetalhados.status === 'error')
-    return 'ERROR_CONTRATOS_DETALHADOS';
+  if (status === 'creating' && cd.status === 'loaded')
+    return 'CREATING_CONTRATOS_DETALHADOS';
+  if (status === 'creating' && inf.status === 'loaded')
+    return 'CREATING_ITENS_NOTAS_FISCAIS';
+  if (status === 'downloading') return 'DOWNLOADING';
+  if (cd.status === 'loading') return 'LOADING_CONTRATOS_DETALHADOS';
+  if (cd.status === 'loaded') return 'LOADED_CONTRATOS_DETALHADOS';
+  if (cd.status === 'error') return 'ERROR_CONTRATOS_DETALHADOS';
+  if (inf.status === 'loading') return 'LOADING_ITENS_NOTAS_FISCAIS';
+  if (inf.status === 'loaded') return 'LOADED_ITENS_NOTAS_FISCAIS';
+  if (inf.status === 'error') return 'ERROR_ITENS_NOTAS_FISCAIS';
   if (municipios.status === 'empty') return 'NOT_READY';
   if (municipios.status === 'loading') return 'LOADING_MUNICIPIOS';
   if (municipios.status === 'error') return 'ERROR_MUNICIPIOS';
@@ -159,8 +208,10 @@ function calculateStatusMessage(status: WorkbookStoreStatus): string {
     case 'ERROR_NOTAS_EMPENHOS':
       return 'Erro ao buscar notas de empenho.';
     case 'CREATING_CONTRATOS_DETALHADOS':
-      return 'Gerando planilha...';
-    case 'DOWNLOADING_CONTRATOS_DETALHADOS':
+      return 'Gerando planilha de contratos...';
+    case 'CREATING_ITENS_NOTAS_FISCAIS':
+      return 'Gerando planilha de itens de notas fiscais...';
+    case 'DOWNLOADING':
       return 'Baixando planilha...';
     default:
       return '';
