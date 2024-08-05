@@ -1,0 +1,6 @@
+<mat-selection-list class="bg-white">
+  <h6 mat-subheader class="pt-4 pl-4">Buscas disponíveis</h6>
+  @for (opt of WORKSHEET_OPTIONS; track opt.value) {
+    <mat-list-option [value]="opt.value">{{ opt.label }}</mat-list-option>
+  }
+</mat-selection-list>

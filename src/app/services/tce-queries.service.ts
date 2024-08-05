@@ -10,6 +10,8 @@ import {
   NotasEmpenhosQueryParams
 } from './tce.types';
 import { FetchWorkerMessage, SearchParams } from './fetcher.worker';
+import { EnhancedFetchWorkerResponse } from './enhanced-fetch.worker';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -17,8 +19,6 @@ import { FetchWorkerMessage, SearchParams } from './fetcher.worker';
 export class TceQueriesService {
   private readonly BASE_URL = '/api/tce';
   private municipios: Municipio[] = [];
-
-  constructor() {}
 
   async fetchContratados(
     params: ContratadosQueryParams
@@ -53,6 +53,15 @@ export class TceQueriesService {
   ): Promise<NotasEmpenhos[]> {
     return fetchAll<NotasEmpenhos[]>(`${this.BASE_URL}/notas_empenhos`, params);
   }
+
+  fetchItensNotasFiscaisEnhanced(
+    params: ItensNotasFiscaisQueryParams
+  ): Observable<EnhancedFetchWorkerResponse<ItensNotasFiscais[]>> {
+    return fetchAllEnhanced<ItensNotasFiscais[]>(
+      `${this.BASE_URL}/itens_notas_fiscais`,
+      params
+    );
+  }
 }
 
 async function fetchAll<T>(
@@ -71,7 +80,7 @@ async function fetchAll<T>(
     worker.onerror = (e) => {
       reject(e);
       worker.terminate();
-    }
+    };
 
     const message: FetchWorkerMessage = {
       url,
@@ -80,4 +89,47 @@ async function fetchAll<T>(
 
     worker.postMessage(message);
   });
+}
+
+function fetchAllEnhanced<T>(
+  url: string,
+  searchParams: SearchParams
+): Observable<EnhancedFetchWorkerResponse<T>> {
+  const worker = new Worker(
+    new URL('./enhanced-fetch.worker.ts', import.meta.url),
+    {
+      type: 'module'
+    }
+  );
+
+  const fetchAll$ = new Observable<EnhancedFetchWorkerResponse<T>>(
+    (subscribe) => {
+      worker.onmessage = ({
+        data
+      }: MessageEvent<EnhancedFetchWorkerResponse<T>>) => {
+        subscribe.next(data);
+        if (data.progress === 1) {
+          subscribe.complete();
+        }
+      };
+
+      worker.onerror = (e) => {
+        subscribe.error(e);
+      };
+
+      const message: FetchWorkerMessage = {
+        url,
+        searchParams
+      };
+
+      worker.postMessage(message);
+    }
+  );
+
+  fetchAll$.subscribe({
+    error: () => worker.terminate(),
+    complete: () => worker.terminate()
+  });
+
+  return fetchAll$;
 }

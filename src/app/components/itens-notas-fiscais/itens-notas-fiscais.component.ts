@@ -7,7 +7,6 @@ import {
 } from '@angular/forms';
 import {
   MatAutocompleteModule,
-  MatAutocompleteSelectedEvent
 } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -29,10 +28,9 @@ const YEARS_SINCE_2003 = Array.from(
 );
 
 @Component({
-  selector: 'cmp-table-itens-nf',
+  selector: 'cmp-itens-notas-fiscais',
   standalone: true,
-  templateUrl: './table-itens-nf.component.html',
-  styleUrl: './table-itens-nf.component.scss',
+  templateUrl: './itens-notas-fiscais.component.html',
   imports: [
     MatAutocompleteModule,
     MatButtonModule,
@@ -51,7 +49,7 @@ const YEARS_SINCE_2003 = Array.from(
   ],
   providers: [provideNgxMask()]
 })
-export class TableItensNfComponent {
+export class ItensNotasFiscaisComponent {
   store = inject(WorkbooksStore);
 
   readonly years = YEARS_SINCE_2003;
@@ -75,35 +73,31 @@ export class TableItensNfComponent {
   private municipioValue = toSignal(this.municipioControl.valueChanges);
   showHeadsOrganizer = signal<boolean>(false);
 
-  canGenerateWorkbook = computed<boolean>(() => {
-    return this.store.status() === 'LOADED_ITENS_NOTAS_FISCAIS';
+  loading = computed<boolean>(() => {
+    return this.store.itensNotasFiscais.status() === 'loading';
   });
 
-  loading = computed<boolean>(() => {
-    const status = this.store.status();
-    return status.startsWith('LOADING');
+  message = computed<string>(() => {
+    return this.store.itensNotasFiscais.message();
   });
 
   municipios = computed(() => {
-    return this.store.municipios().list.filter((m) => {
+    return this.store.municipios().data.filter((m) => {
       const value = (this.municipioValue() || '').toLowerCase();
       return m.nome_municipio.toLowerCase().includes(value);
     });
   });
 
+  progress = computed<number>(() => {
+    return this.store.itensNotasFiscais.progress() * 100;
+  });
+
   constructor() {
     this.versaoExercicioOrcamento.disable();
-    this.onExercicioOrcamentoChange();
-
-    this.versaoExercicioOrcamento.valueChanges.subscribe(() => {
-      this.onExercicioOrcamentoChange();
-    })
 
     this.anoExercicioOrcamento.valueChanges.subscribe((value) => {
       if (value < 2007) this.versaoExercicioOrcamento.enable();
       else this.versaoExercicioOrcamento.disable();
-
-      this.onExercicioOrcamentoChange();
     });
   }
 
@@ -112,16 +106,19 @@ export class TableItensNfComponent {
     this.form.reset();
   }
 
-  onMunicipioSelected(event: MatAutocompleteSelectedEvent) {
-    const selectedMunicipio = this.municipios().find(
-      (m) => m.nome_municipio === event.option.value
-    );
-    if (selectedMunicipio) this.store.onMunicipioSelected(selectedMunicipio);
-  }
+  search(): void {
+    const selectedMunicipio = this.store
+      .municipios()
+      .data.find((m) => m.nome_municipio === this.municipioControl.value);
+    if (!selectedMunicipio) return;
 
-  onExercicioOrcamentoChange() {
-    const year = this.anoExercicioOrcamento.value;
-    const version = year < 2007 ? this.versaoExercicioOrcamento.value : '00';
-    this.store.onExercicioOrcamentoChange(`${year}${version}`);
+    const exercicio_orcamento = `${this.anoExercicioOrcamento.value}${this.versaoExercicioOrcamento.value}`;
+
+    this.store.fetchItensNotasFiscais({
+      codigo_municipio: selectedMunicipio.codigo_municipio,
+      exercicio_orcamento,
+      deslocamento: 0,
+      quantidade: 100
+    });
   }
 }

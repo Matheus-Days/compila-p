@@ -5,82 +5,15 @@ import {
   withState
 } from '@ngrx/signals';
 import { NotasEmpenhos, NotasEmpenhosQueryParams } from '../services/tce.types';
-import { StoreData } from './workbooks.utils';
 import { TceQueriesService } from '../services/tce-queries.service';
 import { inject } from '@angular/core';
+import { WorksheetStoreState } from './workbooks.utils';
 
 type NotasEmpenhosState = {
-  notasEmpenhos: StoreData<NotasEmpenhos>;
+  notasEmpenhos: WorksheetStoreState<NotasEmpenhos>;
 };
 
-export function withNotasEmpenhos() {
-  return signalStoreFeature(
-    withState<NotasEmpenhosState>({
-      notasEmpenhos: {
-        list: [],
-        headers: INITIAL_HEADERS_ORDER,
-        status: 'empty'
-      },
-    }),
-
-    withMethods((store, tceQueriesService = inject(TceQueriesService)) => ({
-      _patchNotasEmpenhosStatus(status: StoreData<NotasEmpenhos>['status']) {
-        patchState(store, {
-          notasEmpenhos: {
-            list: store.notasEmpenhos().list,
-            headers: store.notasEmpenhos().headers,
-            status
-          }
-        });
-      },
-
-      clearNotasEmpenhos(resetHeaders = false) {
-        patchState(store, {
-          notasEmpenhos: {
-            list: [],
-            headers: resetHeaders
-              ? INITIAL_HEADERS_ORDER
-              : store.notasEmpenhos().headers,
-            status: 'empty'
-          }
-        });
-      },
-
-      async fetchNotasEmpenhos(
-        queryParams: NotasEmpenhosQueryParams
-      ): Promise<void> {
-        try {
-          this._patchNotasEmpenhosStatus('loading');
-
-          const data = await tceQueriesService.fetchNotasEmpenho(queryParams);
-
-          patchState(store, {
-            notasEmpenhos: {
-              list: data,
-              headers: store.notasEmpenhos().headers,
-              status: 'loaded'
-            }
-          });
-        } catch (e) {
-          console.error(e);
-          this._patchNotasEmpenhosStatus('error');
-        }
-      },
-
-      onNotasEmpenhosHeadersChange(headers: Array<keyof NotasEmpenhos>) {
-        patchState(store, {
-          notasEmpenhos: {
-            list: store.notasEmpenhos().list,
-            headers,
-            status: store.notasEmpenhos().status
-          }
-        });
-      }
-    }))
-  );
-}
-
-export const INITIAL_HEADERS_ORDER: Array<keyof NotasEmpenhos> = [
+export const INITIAL_HEADERS_ORDER: (keyof NotasEmpenhos)[] = [
   // 'codigo_municipio',
   // 'exercicio_orcamento',
   'numero_empenho',
@@ -121,3 +54,68 @@ export const INITIAL_HEADERS_ORDER: Array<keyof NotasEmpenhos> = [
   'data_contrato',
   'numero_licitacao'
 ];
+
+const INITIAL_STATE: NotasEmpenhosState = {
+  notasEmpenhos: {
+    data: [],
+    headers: INITIAL_HEADERS_ORDER,
+    message: '',
+    progress: -1,
+    status: 'idle'
+  }
+};
+
+export function withNotasEmpenhos() {
+  return signalStoreFeature(
+    withState(INITIAL_STATE),
+
+    withMethods((store, tceQueries = inject(TceQueriesService)) => ({
+      changeNotasEmpenhosHeadersOrder(headers: (keyof NotasEmpenhos)[]) {
+        patchState(store, {
+          notasEmpenhos: {
+            ...store.notasEmpenhos(),
+            headers
+          }
+        });
+      },
+
+      clearNotasEmpenhos() {
+        patchState(store, {
+          notasEmpenhos: INITIAL_STATE.notasEmpenhos
+        });
+      },
+
+      async fetchNotasEmpenhos(params: NotasEmpenhosQueryParams) {
+        patchState(store, {
+          notasEmpenhos: {
+            ...store.notasEmpenhos(),
+            status: 'loading',
+            message: 'Buscando...'
+          }
+        });
+
+        try {
+          const data = await tceQueries.fetchNotasEmpenho(params);
+
+          patchState(store, {
+            notasEmpenhos: {
+              ...store.notasEmpenhos(),
+              data,
+              status: 'loaded',
+              message: 'Busca concluída.'
+            }
+          });
+        } catch (e) {
+          console.error(e);
+          patchState(store, {
+            notasEmpenhos: {
+              ...store.notasEmpenhos(),
+              status: 'error',
+              message: 'Erro durante busca.'
+            }
+          });
+        }
+      }
+    }))
+  );
+}

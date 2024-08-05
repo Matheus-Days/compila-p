@@ -33,7 +33,7 @@ export class WorkbookService {
   }
 
   async downloadWorkbook(workbook: WorkBook, filename: string): Promise<void> {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       try {
         resolve(writeFile(workbook, filename, { bookType: 'xlsx' }));
       } catch (error) {

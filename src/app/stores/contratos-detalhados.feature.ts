@@ -1,12 +1,10 @@
 import {
   patchState,
   signalStoreFeature,
-  withComputed,
   withMethods,
   withState
 } from '@ngrx/signals';
-import { StoreData } from './workbooks.utils';
-import { computed, inject } from '@angular/core';
+import { inject } from '@angular/core';
 import { TceQueriesService } from '../services/tce-queries.service';
 import {
   Contratados,
@@ -15,73 +13,73 @@ import {
 } from '../services/tce.types';
 import { DateRange } from '@angular/material/datepicker';
 import { DatePipe } from '@angular/common';
+import { WorksheetStoreState } from './workbooks.utils';
 
 type ContratosDetalhadosState = {
-  contratosDetalhados: StoreData<ContratoDetalhado>;
-  selectedDateRange: DateRange<Date> | undefined;
+  contratosDetalhados: WorksheetStoreState<ContratoDetalhado>;
+};
+
+export const INITIAL_HEADERS_ORDER: (keyof ContratoDetalhado)[] = [
+  'numero_contrato',
+  'numero_contrato_original',
+  'data_contrato',
+  'data_contrato_original',
+  'data_fim_vigencia_contrato',
+  'data_inicio_vigencia_contrato',
+  'descricao_objeto_contrato',
+  'tipo_contrato',
+  'modalidade_contrato',
+  'valor_total_contrato',
+  'numero_documento_negociante',
+  'nome_negociante',
+  'codigo_tipo_negociante',
+  'cep_negociante',
+  'endereco_negociante',
+  'nome_municipio_negociante',
+  'codigo_uf',
+  'fone_negociante'
+];
+
+const INITIAL_STATE: ContratosDetalhadosState = {
+  contratosDetalhados: {
+    data: [],
+    headers: INITIAL_HEADERS_ORDER,
+    message: '',
+    progress: -1,
+    status: 'idle'
+  }
 };
 
 export function withContratosDetalhados() {
   return signalStoreFeature(
-    withState<ContratosDetalhadosState>({
-      contratosDetalhados: {
-        list: [],
-        headers: INITIAL_HEADERS_ORDER,
-        status: 'empty'
-      },
-      selectedDateRange: undefined
-    }),
-
-    withComputed((store, date = inject(DatePipe)) => ({
-      _selectedDateRange: computed(() => {
-        const dateRange = store.selectedDateRange();
-        if (!dateRange) return '';
-
-        const start = date.transform(dateRange.start, 'yyyy-MM-dd');
-
-        const end = date.transform(dateRange.end, 'yyyy-MM-dd');
-
-        return `${start}_${end}`;
-      })
-    })),
+    withState(INITIAL_STATE),
 
     withMethods((store, tceQueriesService = inject(TceQueriesService)) => ({
-      _patchContratosDetalhadosStatus(
-        status: StoreData<ContratoDetalhado>['status']
+      changeContratosDetalhadosHeadersOrder(
+        headers: (keyof ContratoDetalhado)[]
       ) {
         patchState(store, {
           contratosDetalhados: {
-            list: store.contratosDetalhados().list,
-            headers: store.contratosDetalhados().headers,
-            status
+            ...store.contratosDetalhados(),
+            headers
           }
         });
       },
 
-      clearContratosDetalhados(resetHeaders = false) {
+      clearContratosDetalhados() {
+        patchState(store, {
+          contratosDetalhados: INITIAL_STATE.contratosDetalhados
+        });
+      },
+
+      async fetchContratosDetalhados(params: ContratoQueryParams) {
         patchState(store, {
           contratosDetalhados: {
-            list: [],
-            headers: resetHeaders
-              ? INITIAL_HEADERS_ORDER
-              : store.contratosDetalhados().headers,
-            status: 'empty'
+            ...store.contratosDetalhados(),
+            message: 'Buscando...',
+            status: 'loading'
           }
         });
-      },
-
-      async fetchContratosDetalhados(codigo_municipio: string) {
-        this._patchContratosDetalhadosStatus('loading');
-
-        const selectedDateRange = store._selectedDateRange();
-        if (!selectedDateRange) this._patchContratosDetalhadosStatus('error');
-
-        const params: ContratoQueryParams = {
-          codigo_municipio,
-          data_contrato: selectedDateRange,
-          deslocamento: 0,
-          quantidade: 100
-        };
 
         try {
           const contratos = await tceQueriesService.fetchContratos(params);
@@ -93,33 +91,22 @@ export function withContratosDetalhados() {
 
           patchState(store, {
             contratosDetalhados: {
-              list: contratosDetalhados,
-              headers: store.contratosDetalhados().headers,
+              ...store.contratosDetalhados(),
+              data: contratosDetalhados,
+              message: 'Busca concluída.',
               status: 'loaded'
             }
           });
         } catch (e) {
           console.error(e);
-          this._patchContratosDetalhadosStatus('error');
+          patchState(store, {
+            contratosDetalhados: {
+              ...store.contratosDetalhados(),
+              message: 'Erro durante busca.',
+              status: 'error'
+            }
+          });
         }
-      },
-
-      onDateRangeChange(dateRange: DateRange<Date>) {
-        patchState(store, {
-          selectedDateRange: dateRange
-        });
-      },
-
-      onContratosDetalhadosHeadersChange(
-        headers: Array<keyof ContratoDetalhado>
-      ) {
-        patchState(store, {
-          contratosDetalhados: {
-            list: store.contratosDetalhados().list,
-            headers,
-            status: store.contratosDetalhados().status
-          }
-        });
       }
     }))
   );
@@ -177,23 +164,15 @@ async function generateContratoDetalhado(
   });
 }
 
-export const INITIAL_HEADERS_ORDER: Array<keyof ContratoDetalhado> = [
-  'numero_contrato',
-  'numero_contrato_original',
-  'data_contrato',
-  'data_contrato_original',
-  'data_fim_vigencia_contrato',
-  'data_inicio_vigencia_contrato',
-  'descricao_objeto_contrato',
-  'tipo_contrato',
-  'modalidade_contrato',
-  'valor_total_contrato',
-  'numero_documento_negociante',
-  'nome_negociante',
-  'codigo_tipo_negociante',
-  'cep_negociante',
-  'endereco_negociante',
-  'nome_municipio_negociante',
-  'codigo_uf',
-  'fone_negociante'
-];
+export function formatRange(
+  dateRange: DateRange<Date> | undefined,
+  datePipe: DatePipe
+): string {
+  if (!dateRange) return '';
+
+  const start = datePipe.transform(dateRange.start, 'yyyy-MM-dd');
+
+  const end = datePipe.transform(dateRange.end, 'yyyy-MM-dd');
+
+  return `${start}_${end}`;
+}

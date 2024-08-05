@@ -1,4 +1,32 @@
+<header class="col-span-3 flex h-fit justify-between">
+  <button mat-icon-button (click)="toggleWorksheetOpts()">
+    <mat-icon class="text-white">menu</mat-icon>
+  </button>
+  <button mat-icon-button (click)="toggleWorksheetResults()">
+    <mat-icon class="text-white">download</mat-icon>
+  </button>
+</header>
+
+<div [@opened]="worksheetOptsOpened()" [@slide-left]="worksheetOptsOpened()">
+  <cmp-worksheet-opts class="flex h-full" />
+</div>
+
 <div class="flex flex-col gap-8 p-8">
-  <cmp-table-contratos />
-  <cmp-table-itens-nf />
+  @defer (when showContratos()) {
+    @if (showContratos()) {
+      <cmp-contratos-detalhados />
+    }
+  }
+  @defer (when showItensNf()) {
+    @if (showItensNf()) {
+      <cmp-itens-notas-fiscais />
+    }
+  }
+</div>
+
+<div
+  [@opened]="worksheetResultsOpened()"
+  [@slide-right]="worksheetResultsOpened()"
+>
+  <cmp-worksheet-results class="flex h-full" />
 </div>
