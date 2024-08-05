@@ -58,6 +58,7 @@ export class ItensNotasFiscaisComponent {
     validators: Validators.required,
     nonNullable: true
   });
+  codigoOrgao = new FormControl('', { nonNullable: true });
   municipioControl = new FormControl('', Validators.required);
   versaoExercicioOrcamento = new FormControl('00', {
     validators: Validators.required,
@@ -65,8 +66,9 @@ export class ItensNotasFiscaisComponent {
   });
 
   form = new FormGroup({
-    municipioControl: this.municipioControl,
     anoExercicioOrcamento: this.anoExercicioOrcamento,
+    codigoOrgao: this.codigoOrgao,
+    municipioControl: this.municipioControl,
     versaoExercicioOrcamento: this.versaoExercicioOrcamento
   });
 
@@ -117,6 +119,7 @@ export class ItensNotasFiscaisComponent {
     this.store.fetchItensNotasFiscais({
       codigo_municipio: selectedMunicipio.codigo_municipio,
       exercicio_orcamento,
+      codigo_orgao: this.codigoOrgao.value,
       deslocamento: 0,
       quantidade: 100
     });

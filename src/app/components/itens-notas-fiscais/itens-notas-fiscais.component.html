@@ -4,7 +4,7 @@
       <div class="m-4">Buscar itens de notas fiscais</div>
     </mat-card-title>
     <mat-card-content>
-      <form [formGroup]="form" class="flex gap-2">
+      <form [formGroup]="form" class="flex gap-2 flex-wrap">
         <mat-form-field>
           <mat-label>Município</mat-label>
           <input
@@ -37,6 +37,15 @@
             matInput
             type="text"
             [formControl]="versaoExercicioOrcamento"
+            mask="00"
+          />
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Código do órgão</mat-label>
+          <input
+            matInput
+            type="text"
+            [formControl]="codigoOrgao"
             mask="00"
           />
         </mat-form-field>
