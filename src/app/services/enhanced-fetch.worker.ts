@@ -1,5 +1,7 @@
 /// <reference lib="webworker" />
 
+import { stringifyParams } from './utils';
+
 export type SearchParams = object & {
   deslocamento: number;
 };
@@ -32,6 +34,10 @@ async function fetchAll(
   let progress: number;
 
   if ('data' in result && 'total' in result.data) {
+    if (result.data.total === 0) {
+      sendResponse({ data: [], progress: 1 });
+      return;
+    }
     progress = (previousResults.length / result.data.total);
   } else {
     progress = -1;
@@ -56,14 +62,6 @@ async function fetchAll(
 
 function sendResponse(res: EnhancedFetchWorkerResponse): void {
   postMessage(res);
-}
-
-function stringifyParams(params: SearchParams): Record<string, string> {
-  const record: Record<string, string> = {};
-  Object.entries(params).forEach(
-    ([key, value]) => (record[key] = String(value))
-  );
-  return record;
 }
 
 type FlatData = { data: object[] };

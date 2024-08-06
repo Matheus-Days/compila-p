@@ -20,6 +20,7 @@ import {
 } from '../worksheet-opts/worksheet-opts.component';
 import { WorksheetResultsComponent } from '../worksheet-results/worksheet-results.component';
 import { WorksheetOption } from '../../stores/workbooks.utils';
+import { NotasEmpenhosComponent } from "../notas-empenhos/notas-empenhos.component";
 
 @Component({
   selector: 'cmp-home',
@@ -36,14 +37,16 @@ import { WorksheetOption } from '../../stores/workbooks.utils';
     ContratosDetalhadosComponent,
     ItensNotasFiscaisComponent,
     WorksheetOptsComponent,
-    WorksheetResultsComponent
-  ]
+    WorksheetResultsComponent,
+    NotasEmpenhosComponent
+]
 })
 export class HomeComponent {
   private activatedRoute = inject(ActivatedRoute);
 
   showContratos = signal(false);
   showItensNf = signal(false);
+  showNotasEmpenhos = signal(false);
 
   worksheetOptsOpened = signal(true);
   worksheetResultsOpened = signal(true);
@@ -56,6 +59,7 @@ export class HomeComponent {
 
       this.showContratos.set(selectedWorksheets.includes('contratos'));
       this.showItensNf.set(selectedWorksheets.includes('inf'));
+      this.showNotasEmpenhos.set(selectedWorksheets.includes('ne'));
     });
   }
 

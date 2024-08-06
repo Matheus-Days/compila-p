@@ -22,6 +22,11 @@
       <cmp-itens-notas-fiscais />
     }
   }
+  @defer (when showNotasEmpenhos()) {
+    @if (showNotasEmpenhos()) {
+      <cmp-notas-empenhos />
+    }
+  }
 </div>
 
 <div

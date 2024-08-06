@@ -7,6 +7,7 @@ import {
 } from '@angular/forms';
 import {
   MatAutocompleteModule,
+  MatAutocompleteSelectedEvent,
 } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -21,6 +22,8 @@ import { WorkbooksStore } from '../../stores/workbooks.store';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
 import { HeadsOrganizerComponent } from '../heads-organizer/heads-organizer.component';
+import { TceQueriesService } from '../../services/tce-queries.service';
+import { Municipio, UnidadeGestora } from '../../services/tce.types';
 
 const YEARS_SINCE_2003 = Array.from(
   { length: new Date().getFullYear() - 2003 + 1 },
@@ -45,14 +48,17 @@ const YEARS_SINCE_2003 = Array.from(
     NgxMaskDirective,
     ReactiveFormsModule,
     // Standalone
-    HeadsOrganizerComponent
+    HeadsOrganizerComponent,
   ],
   providers: [provideNgxMask()]
 })
 export class ItensNotasFiscaisComponent {
   store = inject(WorkbooksStore);
+  tceQueries = inject(TceQueriesService);
 
   readonly years = YEARS_SINCE_2003;
+
+  private selectedMunicipio?: Municipio;
 
   anoExercicioOrcamento = new FormControl(new Date().getFullYear(), {
     validators: Validators.required,
@@ -72,7 +78,10 @@ export class ItensNotasFiscaisComponent {
     versaoExercicioOrcamento: this.versaoExercicioOrcamento
   });
 
+  unidadesGestoras = signal<UnidadeGestora[]>([]);
+
   private municipioValue = toSignal(this.municipioControl.valueChanges);
+  
   showHeadsOrganizer = signal<boolean>(false);
 
   loading = computed<boolean>(() => {
@@ -94,13 +103,39 @@ export class ItensNotasFiscaisComponent {
     return this.store.itensNotasFiscais.progress() * 100;
   });
 
+  results = computed<string>(() => {
+    if (this.store.itensNotasFiscais().status === 'loaded')
+      return `${this.store.itensNotasFiscais().data.length} itens encontrados.`;
+    else return '';
+  });
+
   constructor() {
     this.versaoExercicioOrcamento.disable();
 
     this.anoExercicioOrcamento.valueChanges.subscribe((value) => {
+      if (value >= 2008) 
+        this.updateUnidadesGestoras();
+      else this.codigoOrgao.disable();
+
       if (value < 2007) this.versaoExercicioOrcamento.enable();
       else this.versaoExercicioOrcamento.disable();
     });
+
+    this.versaoExercicioOrcamento.valueChanges.subscribe(() => {
+      this.updateUnidadesGestoras();
+    });
+  }
+
+  private async updateUnidadesGestoras(): Promise<void> {
+    if (!this.selectedMunicipio) return;
+    if (!this.anoExercicioOrcamento.value) return;
+
+    const codigo_municipio = this.selectedMunicipio.codigo_municipio;
+    const unidadesGestoras = await this.tceQueries.fetchUnidadesGestoras({
+      codigo_municipio,
+      exercicio_orcamento: `${this.anoExercicioOrcamento.value}${this.versaoExercicioOrcamento.value}`
+    });
+    this.unidadesGestoras.set(unidadesGestoras);
   }
 
   clear(): void {
@@ -108,16 +143,21 @@ export class ItensNotasFiscaisComponent {
     this.form.reset();
   }
 
-  search(): void {
-    const selectedMunicipio = this.store
+  onMunicipioSelected(event: MatAutocompleteSelectedEvent): void {
+    const nome_municipio = event.option.value;
+    this.selectedMunicipio = this.store
       .municipios()
-      .data.find((m) => m.nome_municipio === this.municipioControl.value);
-    if (!selectedMunicipio) return;
+      .data.find((m) => m.nome_municipio === nome_municipio);
+    this.updateUnidadesGestoras();
+  }
+
+  search(): void {
+    if (!this.selectedMunicipio) return;
 
     const exercicio_orcamento = `${this.anoExercicioOrcamento.value}${this.versaoExercicioOrcamento.value}`;
 
     this.store.fetchItensNotasFiscais({
-      codigo_municipio: selectedMunicipio.codigo_municipio,
+      codigo_municipio: this.selectedMunicipio.codigo_municipio,
       exercicio_orcamento,
       codigo_orgao: this.codigoOrgao.value,
       deslocamento: 0,
