@@ -9,6 +9,7 @@ import { TceQueriesService } from '../services/tce-queries.service';
 import { inject } from '@angular/core';
 import { WorksheetStoreState } from './workbooks.utils';
 import { MonthValue } from '../components/months-select/months-select.component';
+import PQueue from 'p-queue';
 
 type NotasEmpenhosState = {
   notasEmpenhos: WorksheetStoreState<NotasEmpenhos>;
@@ -109,11 +110,25 @@ export function withNotasEmpenhos() {
         });
 
         try {
-          const queue = prepareQueries(customParams);
+          const queue = new PQueue({ concurrency: 6 });
 
-          const requests = queue.map((params) => tceQueries.fetchNotasEmpenho(params));
-          const responses = await Promise.all(requests);
-          const data = responses.flat();
+          const queriesParams = prepareQueries(customParams);
+
+          const requests = queriesParams.map((params) => {
+            return async () => tceQueries.fetchNotasEmpenho(params);
+          });
+
+          queue.addListener('next', () => {
+            patchState(store, {
+              notasEmpenhos: {
+                ...store.notasEmpenhos(),
+                progress:
+                  (queriesParams.length - queue.size) / queriesParams.length
+              }
+            });
+          });
+
+          const data = (await queue.addAll(requests)).flat();
 
           patchState(store, {
             notasEmpenhos: {
