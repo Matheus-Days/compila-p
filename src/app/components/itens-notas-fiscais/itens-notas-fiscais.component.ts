@@ -23,7 +23,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
 import { HeadsOrganizerComponent } from '../heads-organizer/heads-organizer.component';
 import { TceQueriesService } from '../../services/tce-queries.service';
-import { Municipio, UnidadeGestora } from '../../services/tce.types';
+import { ItensNotasFiscaisQueryParams, Municipio, UnidadeGestora } from '../../services/tce.types';
 
 const YEARS_SINCE_2003 = Array.from(
   { length: new Date().getFullYear() - 2003 + 1 },
@@ -156,12 +156,15 @@ export class ItensNotasFiscaisComponent {
 
     const exercicio_orcamento = `${this.anoExercicioOrcamento.value}${this.versaoExercicioOrcamento.value}`;
 
-    this.store.fetchItensNotasFiscais({
+    const params: ItensNotasFiscaisQueryParams = {
       codigo_municipio: this.selectedMunicipio.codigo_municipio,
       exercicio_orcamento,
-      codigo_orgao: this.codigoOrgao.value,
       deslocamento: 0,
       quantidade: 100
-    });
+    }
+
+    if (this.codigoOrgao.value) params.codigo_orgao = this.codigoOrgao.value;
+
+    this.store.fetchItensNotasFiscais(params);
   }
 }
