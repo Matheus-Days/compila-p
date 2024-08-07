@@ -126,20 +126,20 @@ export type NotasEmpenhos = {
   codigo_uf: string,
   tipo_fonte: string,
   codigo_fonte: string,
-  dadosEmpenho: {
-    numero_empenho: string,
-    codigo_municipio: string,
-    exercicio_orcamento: number,
-    codigo_orgao: string,
-    codigo_unidade: string,
-    data_emissao_empenho: string,
-    cd_cpf_gestor: string,
-    data_contrato: string,
-    codigo_contrato: string,
-    data_realizacao_licitacao: string,
-    numero_licitacao: string,
-    nota_empenho: string
-  },
+  // dadosEmpenho: {
+  //   numero_empenho: string,
+  //   codigo_municipio: string,
+  //   exercicio_orcamento: number,
+  //   codigo_orgao: string,
+  //   codigo_unidade: string,
+  //   data_emissao_empenho: string,
+  //   cd_cpf_gestor: string,
+  //   data_contrato: string,
+  //   codigo_contrato: string,
+  //   data_realizacao_licitacao: string,
+  //   numero_licitacao: string,
+  //   nota_empenho: string
+  // },
   codigo_contrato: string,
   data_contrato: string,
   numero_licitacao: string
@@ -162,3 +162,19 @@ export type NotasEmpenhosQueryParams = {
   nome_municipio_negociante?: string;
   codigo_uf?: string;
 }
+
+export type UnidadeGestora = {
+  codigo_municipio: string;
+  exercicio_orcamento: number;
+  codigo_unidade_gestora: number;
+  data_referencia: number;
+  nome_unidade_gestora: string;
+  data_criacao: string;
+  data_extincao: string | null;
+  numero_lei_criacao: string;
+}
+
+export type UnidadesGestorasQueryParams = {
+  codigo_municipio: string;
+  exercicio_orcamento: string;
+};

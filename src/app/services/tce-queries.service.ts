@@ -7,18 +7,20 @@ import {
   ItensNotasFiscaisQueryParams,
   Municipio,
   NotasEmpenhos,
-  NotasEmpenhosQueryParams
+  NotasEmpenhosQueryParams,
+  UnidadeGestora,
+  UnidadesGestorasQueryParams
 } from './tce.types';
 import { FetchWorkerMessage, SearchParams } from './fetcher.worker';
+import { EnhancedFetchWorkerResponse } from './enhanced-fetch.worker';
+import { Observable } from 'rxjs';
+import { stringifyParams } from './utils';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TceQueriesService {
   private readonly BASE_URL = '/api/tce';
-  private municipios: Municipio[] = [];
-
-  constructor() {}
 
   async fetchContratados(
     params: ContratadosQueryParams
@@ -40,18 +42,35 @@ export class TceQueriesService {
   }
 
   async fetchMunicipios(): Promise<Municipio[]> {
-    if (this.municipios.length === 0) {
-      const response = await fetch(`${this.BASE_URL}/municipios`);
-      const parsed = await response.json();
-      this.municipios = parsed.data;
-    }
-    return this.municipios;
+    const response = await fetch(`${this.BASE_URL}/municipios`);
+    const parsed = await response.json();
+    return parsed.data;
   }
 
   async fetchNotasEmpenho(
     params: NotasEmpenhosQueryParams
   ): Promise<NotasEmpenhos[]> {
     return fetchAll<NotasEmpenhos[]>(`${this.BASE_URL}/notas_empenhos`, params);
+  }
+
+  fetchItensNotasFiscaisEnhanced(
+    params: ItensNotasFiscaisQueryParams
+  ): Observable<EnhancedFetchWorkerResponse<ItensNotasFiscais[]>> {
+    return fetchAllEnhanced<ItensNotasFiscais[]>(
+      `${this.BASE_URL}/itens_notas_fiscais`,
+      params
+    );
+  }
+
+  async fetchUnidadesGestoras(
+    params: UnidadesGestorasQueryParams
+  ): Promise<UnidadeGestora[]> {
+    const paramsStr = new URLSearchParams(stringifyParams(params));
+    const response = await fetch(
+      `${this.BASE_URL}/unidades_gestoras?${paramsStr}`
+    );
+    const parsed = await response.json();
+    return parsed.data;
   }
 }
 
@@ -71,7 +90,7 @@ async function fetchAll<T>(
     worker.onerror = (e) => {
       reject(e);
       worker.terminate();
-    }
+    };
 
     const message: FetchWorkerMessage = {
       url,
@@ -80,4 +99,47 @@ async function fetchAll<T>(
 
     worker.postMessage(message);
   });
+}
+
+function fetchAllEnhanced<T>(
+  url: string,
+  searchParams: SearchParams
+): Observable<EnhancedFetchWorkerResponse<T>> {
+  const worker = new Worker(
+    new URL('./enhanced-fetch.worker.ts', import.meta.url),
+    {
+      type: 'module'
+    }
+  );
+
+  const fetchAll$ = new Observable<EnhancedFetchWorkerResponse<T>>(
+    (subscribe) => {
+      worker.onmessage = ({
+        data
+      }: MessageEvent<EnhancedFetchWorkerResponse<T>>) => {
+        subscribe.next(data);
+        if (data.progress === 1) {
+          subscribe.complete();
+        }
+      };
+
+      worker.onerror = (e) => {
+        subscribe.error(e);
+      };
+
+      const message: FetchWorkerMessage = {
+        url,
+        searchParams
+      };
+
+      worker.postMessage(message);
+    }
+  );
+
+  fetchAll$.subscribe({
+    error: () => worker.terminate(),
+    complete: () => worker.terminate()
+  });
+
+  return fetchAll$;
 }

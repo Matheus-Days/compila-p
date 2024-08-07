@@ -1,15 +1,12 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import {
   FormControl,
   FormGroup,
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
-import {
-  MatAutocompleteModule,
-  MatAutocompleteSelectedEvent
-} from '@angular/material/autocomplete';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { provideNativeDateAdapter } from '@angular/material/core';
@@ -21,16 +18,18 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { HeadsOrganizerComponent } from '../heads-organizer/heads-organizer.component';
 import { WorkbooksStore } from '../../stores/workbooks.store';
+import { formatRange } from '../../stores/contratos-detalhados.feature';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 @Component({
-  selector: 'cmp-table-contratos',
+  selector: 'cmp-contratos-detalhados',
   standalone: true,
-  templateUrl: './table-contratos.component.html',
-  styleUrl: './table-contratos.component.scss',
+  templateUrl: './contratos-detalhados.component.html',
   imports: [
     MatAutocompleteModule,
     MatButtonModule,
     MatCardModule,
+    MatCheckboxModule,
     MatDatepickerModule,
     MatFormFieldModule,
     MatIconModule,
@@ -42,8 +41,9 @@ import { WorkbooksStore } from '../../stores/workbooks.store';
   ],
   providers: [provideNativeDateAdapter(), DatePipe]
 })
-export class TableContratosComponent {
+export class ContratosDetalhadosComponent {
   store = inject(WorkbooksStore);
+  datePipe = inject(DatePipe);
 
   municipioControl = new FormControl('', Validators.required);
 
@@ -58,52 +58,57 @@ export class TableContratosComponent {
   });
 
   private municipioValue = toSignal(this.municipioControl.valueChanges);
-
-  canGenerateWorkbook = computed<boolean>(() => {
-    return this.store.status() === 'LOADED_CONTRATOS_DETALHADOS';
-  });
+  
+  showHeadsOrganizer = signal<boolean>(false);
 
   loading = computed<boolean>(() => {
-    const status = this.store.status();
-    return status.startsWith('LOADING');
+    return this.store.contratosDetalhados().status === 'loading';
+  });
+
+  message = computed<string>(() => {
+    return this.store.contratosDetalhados.message();
   });
 
   municipios = computed(() => {
-    return this.store.municipios().list.filter((m) => {
+    return this.store.municipios().data.filter((m) => {
       const value = (this.municipioValue() || '').toLowerCase();
       return m.nome_municipio.toLowerCase().includes(value);
     });
   });
 
-  resultNumber = computed<number>(() => {
-    return this.store.contratosDetalhados().list.length;
+  resultNumber = computed<string>(() => {
+    const count = this.store.contratosDetalhados().data.length;
+    if (this.store.contratosDetalhados().status === 'loaded')
+      return `${count} resultado(s) encontrado(s)`;
+    else return '';
   });
-
-  statusMessage = computed<string>(() => {
-    console.log(this.store.statusMessage());
-    return this.store.statusMessage();
-  });
-
-  constructor() {
-    this.dateRangeGroup.valueChanges.subscribe((val) => {
-      if (!val.start || !val.end) return;
-      this.store.onDateRangeChange(new DateRange(val.start, val.end));
-    });
-  }
 
   clear(): void {
     this.store.clearContratosDetalhados();
     this.form.reset();
   }
 
-  onMunicipioSelected(event: MatAutocompleteSelectedEvent) {
-    const selectedMunicipio = this.municipios().find(
-      (m) => m.nome_municipio === event.option.value
-    );
-    if (selectedMunicipio) this.store.onMunicipioSelected(selectedMunicipio);
-  }
-
   async search(): Promise<void> {
-    this.store.searchContratosDetalhadosData();
+    if (!this.dateRangeGroup.value.start) return;
+    if (!this.dateRangeGroup.value.end) return;
+
+    const selectedMunicipio = this.store.municipios().data.find(
+      (m) => m.nome_municipio === this.municipioControl.value
+    );
+    if (!selectedMunicipio) return;
+
+    const range = new DateRange<Date>(
+      this.dateRangeGroup.value.start,
+      this.dateRangeGroup.value.end
+    );
+
+    const data_contrato = formatRange(range, this.datePipe);
+
+    this.store.fetchContratosDetalhados({
+      codigo_municipio: selectedMunicipio.codigo_municipio,
+      data_contrato,
+      quantidade: 100,
+      deslocamento: 0
+    });
   }
 }

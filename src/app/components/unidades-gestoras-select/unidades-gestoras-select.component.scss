@@ -1,0 +1,11 @@
+mat-checkbox {
+  --mat-checkbox-label-text-size: 1rem;
+}
+
+.select-all-checkbox {
+  padding-left: 0.375rem;
+
+  &:hover {
+    background-color: var(--mat-option-hover-state-layer-color);
+  }
+}

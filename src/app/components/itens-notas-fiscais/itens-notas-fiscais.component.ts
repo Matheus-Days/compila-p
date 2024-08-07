@@ -7,7 +7,7 @@ import {
 } from '@angular/forms';
 import {
   MatAutocompleteModule,
-  MatAutocompleteSelectedEvent
+  MatAutocompleteSelectedEvent,
 } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -22,6 +22,8 @@ import { WorkbooksStore } from '../../stores/workbooks.store';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
 import { HeadsOrganizerComponent } from '../heads-organizer/heads-organizer.component';
+import { TceQueriesService } from '../../services/tce-queries.service';
+import { ItensNotasFiscaisQueryParams, Municipio, UnidadeGestora } from '../../services/tce.types';
 
 const YEARS_SINCE_2003 = Array.from(
   { length: new Date().getFullYear() - 2003 + 1 },
@@ -29,10 +31,9 @@ const YEARS_SINCE_2003 = Array.from(
 );
 
 @Component({
-  selector: 'cmp-table-itens-nf',
+  selector: 'cmp-itens-notas-fiscais',
   standalone: true,
-  templateUrl: './table-itens-nf.component.html',
-  styleUrl: './table-itens-nf.component.scss',
+  templateUrl: './itens-notas-fiscais.component.html',
   imports: [
     MatAutocompleteModule,
     MatButtonModule,
@@ -47,19 +48,23 @@ const YEARS_SINCE_2003 = Array.from(
     NgxMaskDirective,
     ReactiveFormsModule,
     // Standalone
-    HeadsOrganizerComponent
+    HeadsOrganizerComponent,
   ],
   providers: [provideNgxMask()]
 })
-export class TableItensNfComponent {
+export class ItensNotasFiscaisComponent {
   store = inject(WorkbooksStore);
+  tceQueries = inject(TceQueriesService);
 
   readonly years = YEARS_SINCE_2003;
+
+  private selectedMunicipio?: Municipio;
 
   anoExercicioOrcamento = new FormControl(new Date().getFullYear(), {
     validators: Validators.required,
     nonNullable: true
   });
+  codigoOrgao = new FormControl('', { nonNullable: true });
   municipioControl = new FormControl('', Validators.required);
   versaoExercicioOrcamento = new FormControl('00', {
     validators: Validators.required,
@@ -67,44 +72,70 @@ export class TableItensNfComponent {
   });
 
   form = new FormGroup({
-    municipioControl: this.municipioControl,
     anoExercicioOrcamento: this.anoExercicioOrcamento,
+    codigoOrgao: this.codigoOrgao,
+    municipioControl: this.municipioControl,
     versaoExercicioOrcamento: this.versaoExercicioOrcamento
   });
 
+  unidadesGestoras = signal<UnidadeGestora[]>([]);
+
   private municipioValue = toSignal(this.municipioControl.valueChanges);
+  
   showHeadsOrganizer = signal<boolean>(false);
 
-  canGenerateWorkbook = computed<boolean>(() => {
-    return this.store.status() === 'LOADED_ITENS_NOTAS_FISCAIS';
+  loading = computed<boolean>(() => {
+    return this.store.itensNotasFiscais.status() === 'loading';
   });
 
-  loading = computed<boolean>(() => {
-    const status = this.store.status();
-    return status.startsWith('LOADING');
+  message = computed<string>(() => {
+    return this.store.itensNotasFiscais.message();
   });
 
   municipios = computed(() => {
-    return this.store.municipios().list.filter((m) => {
+    return this.store.municipios().data.filter((m) => {
       const value = (this.municipioValue() || '').toLowerCase();
       return m.nome_municipio.toLowerCase().includes(value);
     });
   });
 
+  progress = computed<number>(() => {
+    return this.store.itensNotasFiscais.progress() * 100;
+  });
+
+  results = computed<string>(() => {
+    if (this.store.itensNotasFiscais().status === 'loaded')
+      return `${this.store.itensNotasFiscais().data.length} itens encontrados.`;
+    else return '';
+  });
+
   constructor() {
     this.versaoExercicioOrcamento.disable();
-    this.onExercicioOrcamentoChange();
-
-    this.versaoExercicioOrcamento.valueChanges.subscribe(() => {
-      this.onExercicioOrcamentoChange();
-    })
 
     this.anoExercicioOrcamento.valueChanges.subscribe((value) => {
+      if (value >= 2008) 
+        this.updateUnidadesGestoras();
+      else this.codigoOrgao.disable();
+
       if (value < 2007) this.versaoExercicioOrcamento.enable();
       else this.versaoExercicioOrcamento.disable();
-
-      this.onExercicioOrcamentoChange();
     });
+
+    this.versaoExercicioOrcamento.valueChanges.subscribe(() => {
+      this.updateUnidadesGestoras();
+    });
+  }
+
+  private async updateUnidadesGestoras(): Promise<void> {
+    if (!this.selectedMunicipio) return;
+    if (!this.anoExercicioOrcamento.value) return;
+
+    const codigo_municipio = this.selectedMunicipio.codigo_municipio;
+    const unidadesGestoras = await this.tceQueries.fetchUnidadesGestoras({
+      codigo_municipio,
+      exercicio_orcamento: `${this.anoExercicioOrcamento.value}${this.versaoExercicioOrcamento.value}`
+    });
+    this.unidadesGestoras.set(unidadesGestoras);
   }
 
   clear(): void {
@@ -112,16 +143,28 @@ export class TableItensNfComponent {
     this.form.reset();
   }
 
-  onMunicipioSelected(event: MatAutocompleteSelectedEvent) {
-    const selectedMunicipio = this.municipios().find(
-      (m) => m.nome_municipio === event.option.value
-    );
-    if (selectedMunicipio) this.store.onMunicipioSelected(selectedMunicipio);
+  onMunicipioSelected(event: MatAutocompleteSelectedEvent): void {
+    const nome_municipio = event.option.value;
+    this.selectedMunicipio = this.store
+      .municipios()
+      .data.find((m) => m.nome_municipio === nome_municipio);
+    this.updateUnidadesGestoras();
   }
 
-  onExercicioOrcamentoChange() {
-    const year = this.anoExercicioOrcamento.value;
-    const version = year < 2007 ? this.versaoExercicioOrcamento.value : '00';
-    this.store.onExercicioOrcamentoChange(`${year}${version}`);
+  search(): void {
+    if (!this.selectedMunicipio) return;
+
+    const exercicio_orcamento = `${this.anoExercicioOrcamento.value}${this.versaoExercicioOrcamento.value}`;
+
+    const params: ItensNotasFiscaisQueryParams = {
+      codigo_municipio: this.selectedMunicipio.codigo_municipio,
+      exercicio_orcamento,
+      deslocamento: 0,
+      quantidade: 100
+    }
+
+    if (this.codigoOrgao.value) params.codigo_orgao = this.codigoOrgao.value;
+
+    this.store.fetchItensNotasFiscais(params);
   }
 }

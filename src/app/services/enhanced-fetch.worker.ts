@@ -11,6 +11,11 @@ export type FetchWorkerMessage = {
   searchParams: SearchParams;
 };
 
+export type EnhancedFetchWorkerResponse<T = object> = {
+  data: T;
+  progress: number;
+};
+
 addEventListener('message', ({ data }: MessageEvent<FetchWorkerMessage>) => {
   const { url, searchParams } = data;
   fetchAll(url, searchParams);
@@ -26,9 +31,22 @@ async function fetchAll(
 
   const result = await (await fetch(searchQueryUrl)).json();
 
-  if (result.data.length === 0) {
-    postMessage(previousResults);
+  let progress: number;
+
+  if ('data' in result && 'total' in result.data) {
+    if (result.data.total === 0) {
+      sendResponse({ data: [], progress: 1 });
+      return;
+    }
+    progress = (previousResults.length / result.data.total);
   } else {
+    progress = -1;
+  }
+
+  if (result.data.length === 0) {
+    sendResponse({ data: previousResults, progress });
+  } else {
+    sendResponse({ data: [], progress });
     previousResults.push(...findData(result));
 
     fetchAll(
@@ -40,6 +58,10 @@ async function fetchAll(
       previousResults
     );
   }
+}
+
+function sendResponse(res: EnhancedFetchWorkerResponse): void {
+  postMessage(res);
 }
 
 type FlatData = { data: object[] };

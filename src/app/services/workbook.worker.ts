@@ -7,17 +7,22 @@ export type WorkbookData= Record<string, string | number>[];
 export type WorkbookHeaders = string[];
 
 export type WorkbookWorkerMessage = {
-  data: WorkbookData;
-  header?: WorkbookHeaders;
+  worksheets: {
+    data: WorkbookData;
+    header?: WorkbookHeaders;
+    name: string;
+  }[]
 };
 
 addEventListener('message', ({ data }: MessageEvent<WorkbookWorkerMessage>) => {
   createWorkbook(data);
 });
 
-function createWorkbook({ data, header }: WorkbookWorkerMessage): void {
+function createWorkbook(worksheets: WorkbookWorkerMessage): void {
   const workbook = utils.book_new();
-  const sheet = utils.json_to_sheet(data, { header });
-  utils.book_append_sheet(workbook, sheet);
+  worksheets.worksheets.forEach(({ data, header, name }) => {
+    const sheet = utils.json_to_sheet(data, { header });
+    utils.book_append_sheet(workbook, sheet, name);
+  });
   postMessage(workbook);
 }

@@ -7,85 +7,71 @@ import {
 import { inject } from '@angular/core';
 import { TceQueriesService } from '../services/tce-queries.service';
 import { Municipio } from '../services/tce.types';
-import { StoreData } from './workbooks.utils';
+import { WorksheetStoreState } from './workbooks.utils';
 
 type MunicipiosState = {
-  municipios: StoreData<Municipio>;
-  selectedMunicipio: Municipio | undefined;
+  municipios: WorksheetStoreState<Municipio>;
 };
 
-const INITIAL_HEADERS_ORDER: Array<keyof Municipio> = [
+const INITIAL_HEADERS_ORDER: (keyof Municipio)[] = [
   'codigo_municipio',
   'nome_municipio',
   'geoibgeId',
   'geonamesId'
 ];
 
+const INITIAL_STATE: MunicipiosState = {
+  municipios: {
+    data: [],
+    headers: INITIAL_HEADERS_ORDER,
+    message: '',
+    progress: -1,
+    status: 'idle'
+  }
+};
+
 export function withMunicipios() {
   return signalStoreFeature(
-    withState<MunicipiosState>({
-      municipios: {
-        list: [],
-        headers: INITIAL_HEADERS_ORDER,
-        status: 'empty'
-      },
-      selectedMunicipio: undefined
-    }),
+    withState(INITIAL_STATE),
 
     withMethods((store, tceQueriesService = inject(TceQueriesService)) => ({
-      _patchMunicipiosStatus(status: StoreData<Municipio>['status']) {
+      async fetchMunicipios() {
         patchState(store, {
           municipios: {
-            list: store.municipios().list,
-            headers: store.municipios().headers,
-            status
+            ...store.municipios(),
+            message: 'Carregando municípios...',
+            status: 'loading'
           }
         });
-      },
-
-      async fetchMunicipios() {
-        this._patchMunicipiosStatus('loading');
 
         try {
           const municipios = await tceQueriesService.fetchMunicipios();
 
           patchState(store, {
             municipios: {
-              list: municipios,
-              headers: store.municipios().headers,
+              ...store.municipios(),
+              data: municipios,
+              message: 'Municípios prontos.',
               status: 'loaded'
             }
           });
-        } catch (error) {
-          console.error(error);
-          this._patchMunicipiosStatus('error');
+        } catch (e) {
+          console.error(e);
+          patchState(store, {
+            municipios: {
+              ...store.municipios(),
+              message: 'Erro ao carregar municípios.',
+              status: 'error'
+            }
+          });
         }
       },
 
-      onMunicipioSelected(municipio: Municipio) {
-        patchState(store, {
-          selectedMunicipio: municipio
-        });
-      },
-
-      patchMunicipiosHeaders(headers: Array<keyof Municipio>) {
+      changeMunicipiosHeadersOrder(headers: (keyof Municipio)[]) {
         patchState(store, {
           municipios: {
-            list: store.municipios().list,
-            headers,
-            status: store.municipios().status
-          }
-        });
-      },
-
-      resetMunicipios(resetHeaders = false) {
-        patchState(store, {
-          municipios: {
-            list: [],
-            headers: resetHeaders
-              ? INITIAL_HEADERS_ORDER
-              : store.municipios().headers,
-            status: 'empty'
+            ...store.municipios(),
+            headers
           }
         });
       }

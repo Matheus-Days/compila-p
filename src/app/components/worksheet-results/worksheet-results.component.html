@@ -1,0 +1,20 @@
+<div class="flex flex-col gap-8 bg-white">
+  <mat-selection-list>
+    <h6 mat-subheader class="pt-4 px-4">Resultados disponíveis</h6>
+    @for (worksheet of worksheetResults(); track worksheet.value) {
+      <mat-list-option [value]="worksheet.value">{{
+        worksheet.label
+      }}</mat-list-option>
+    }
+  </mat-selection-list>
+
+  <div class="px-4">
+    <button
+      mat-flat-button
+      [disabled]="store.selectedWorksheetResults().length === 0"
+      (click)="download()"
+    >
+      Baixar planilhas selecionadas
+    </button>
+  </div>
+</div>

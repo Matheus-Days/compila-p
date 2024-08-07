@@ -6,95 +6,17 @@ import {
 } from '@ngrx/signals';
 import {
   ItensNotasFiscais,
-  ItensNotasFiscaisQueryParams,
+  ItensNotasFiscaisQueryParams
 } from '../services/tce.types';
-import { StoreData } from './workbooks.utils';
+import { WorksheetStoreState } from './workbooks.utils';
 import { TceQueriesService } from '../services/tce-queries.service';
 import { inject } from '@angular/core';
 
 type ItensNotasFiscaisState = {
-  itensNotasFiscais: StoreData<ItensNotasFiscais>;
-  exercicioOrcamento: string;
+  itensNotasFiscais: WorksheetStoreState<ItensNotasFiscais>;
 };
 
-export function withItensNotasFiscais() {
-  return signalStoreFeature(
-    withState<ItensNotasFiscaisState>({
-      itensNotasFiscais: {
-        list: [],
-        headers: INITIAL_HEADERS_ORDER,
-        status: 'empty'
-      },
-      exercicioOrcamento: ''
-    }),
-
-    withMethods((store, tceQueriesService = inject(TceQueriesService)) => ({
-      _patchItensNotasFiscaisStatus(
-        status: StoreData<ItensNotasFiscais>['status']
-      ) {
-        patchState(store, {
-          itensNotasFiscais: {
-            list: store.itensNotasFiscais().list,
-            headers: store.itensNotasFiscais().headers,
-            status
-          }
-        });
-      },
-
-      clearItensNotasFiscais(resetHeaders = false) {
-        patchState(store, {
-          itensNotasFiscais: {
-            list: [],
-            headers: resetHeaders
-              ? INITIAL_HEADERS_ORDER
-              : store.itensNotasFiscais().headers,
-            status: 'empty'
-          }
-        });
-      },
-
-      async fetchItensNotasFiscais(
-        queryParams: ItensNotasFiscaisQueryParams
-      ): Promise<void> {
-        try {
-          this._patchItensNotasFiscaisStatus('loading');
-
-          const itensNotasFiscais =
-            await tceQueriesService.fetchItensNotasFiscais(queryParams);
-
-          patchState(store, {
-            itensNotasFiscais: {
-              list: itensNotasFiscais,
-              headers: store.itensNotasFiscais().headers,
-              status: 'loaded'
-            }
-          });
-        } catch (e) {
-          console.error(e);
-          this._patchItensNotasFiscaisStatus('error');
-        }
-      },
-
-      onExercicioOrcamentoChange(exercicioOrcamento: string) {
-        patchState(store, { exercicioOrcamento });
-      },
-
-      onItensNotasFiscaisHeadersChange(
-        headers: Array<keyof ItensNotasFiscais>
-      ) {
-        patchState(store, {
-          itensNotasFiscais: {
-            list: store.itensNotasFiscais().list,
-            headers,
-            status: store.itensNotasFiscais().status
-          }
-        });
-      }
-    }))
-  );
-}
-
-export const INITIAL_HEADERS_ORDER: Array<keyof ItensNotasFiscais> = [
+export const INITIAL_HEADERS_ORDER: (keyof ItensNotasFiscais)[] = [
   'numero_item_sequencial',
   'descricao1_item',
   'descricao2_item',
@@ -112,3 +34,84 @@ export const INITIAL_HEADERS_ORDER: Array<keyof ItensNotasFiscais> = [
   'tipo_nota_fiscal',
   'exercicio_orcamento'
 ];
+
+const INITIAL_STATE: ItensNotasFiscaisState = {
+  itensNotasFiscais: {
+    data: [],
+    headers: INITIAL_HEADERS_ORDER,
+    message: '',
+    progress: -1,
+    status: 'idle'
+  }
+};
+
+export function withItensNotasFiscais() {
+  return signalStoreFeature(
+    withState(INITIAL_STATE),
+
+    withMethods((store, tceQueriesService = inject(TceQueriesService)) => ({
+      changeItensNotasFiscaisHeadersOrder(
+        headers: (keyof ItensNotasFiscais)[]
+      ) {
+        patchState(store, {
+          itensNotasFiscais: {
+            ...store.itensNotasFiscais(),
+            headers
+          }
+        });
+      },
+
+      clearItensNotasFiscais() {
+        patchState(store, {
+          itensNotasFiscais: INITIAL_STATE.itensNotasFiscais
+        });
+      },
+
+      async fetchItensNotasFiscais(
+        queryParams: ItensNotasFiscaisQueryParams
+      ): Promise<void> {
+        patchState(store, {
+          itensNotasFiscais: {
+            ...store.itensNotasFiscais(),
+            message: 'Buscando...',
+            status: 'loading'
+          }
+        });
+
+        const itensNotasFiscais$ =
+          tceQueriesService.fetchItensNotasFiscaisEnhanced(queryParams);
+
+        itensNotasFiscais$.subscribe({
+          next: (res) => {
+            patchState(store, {
+              itensNotasFiscais: {
+                ...store.itensNotasFiscais(),
+                data: res.data,
+                progress: res.progress
+              }
+            });
+          },
+          error: (e) => {
+            console.error(e);
+            patchState(store, {
+              itensNotasFiscais: {
+                ...store.itensNotasFiscais(),
+                message: 'Erro durante busca.',
+                status: 'error'
+              }
+            });
+          },
+          complete: () => {
+            patchState(store, {
+              itensNotasFiscais: {
+                ...store.itensNotasFiscais(),
+                message: 'Busca concluída.',
+                status: 'loaded'
+              }
+            });
+          }
+        });
+      }
+    }))
+  );
+}

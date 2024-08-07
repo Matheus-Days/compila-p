@@ -1,0 +1,15 @@
+<mat-form-field>
+  <mat-label>{{ label() }}</mat-label>
+  <mat-select [formControl]="control()" [multiple]="multiple()">
+    @if (!disableSelectAll() && multiple()) {
+      <div class="select-all-checkbox">
+        <mat-checkbox (change)="toggleSelectAll()" [checked]="isAllSelected()">
+          Ano completo
+        </mat-checkbox>
+      </div>
+    }
+    @for (monthValue of monthValues(); track monthValue) {
+      <mat-option [value]="monthValue">{{ MONTHS_MAP[monthValue] }}</mat-option>
+    }
+  </mat-select>
+</mat-form-field>
