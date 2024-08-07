@@ -1,4 +1,12 @@
-import { Component, computed, inject, input, output } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal
+} from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import {
   MatAutocompleteModule,
@@ -7,8 +15,8 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { WorkbooksStore } from '../../stores/workbooks.store';
 import { Municipio } from '../../services/tce.types';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { MatInputModule } from '@angular/material/input';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'cmp-municipio-autocomplete',
@@ -29,7 +37,8 @@ export class MunicipioAutocompleteComponent {
   );
 
   municipioSelected = output<Municipio | undefined>();
-  municipioValue = toSignal(this.control().valueChanges);
+  municipioValue = signal('');
+  municipioValueSubscription?: Subscription;
 
   municipios = computed(() => {
     return this.store.municipios().data.filter((m) => {
@@ -37,6 +46,18 @@ export class MunicipioAutocompleteComponent {
       return m.nome_municipio.toLowerCase().includes(value);
     });
   });
+
+  constructor() {
+    effect(() => {
+      if (this.municipioValueSubscription)
+        this.municipioValueSubscription.unsubscribe();
+      this.municipioValueSubscription = this.control().valueChanges.subscribe(
+        (val) => {
+          this.municipioValue.set(val);
+        }
+      );
+    });
+  }
 
   onMunicipioSelected(event: MatAutocompleteSelectedEvent): void {
     const nome_municipio = event.option.value;
