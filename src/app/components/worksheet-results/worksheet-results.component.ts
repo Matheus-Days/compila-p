@@ -12,6 +12,7 @@ import {
   WORKSHEET_OPTS_LABELS,
   WorksheetOptionObject
 } from '../../stores/workbooks.utils';
+import { MatDividerModule } from '@angular/material/divider';
 
 type WorksheetResult = WorksheetOptionObject & { selected: boolean };
 
@@ -20,7 +21,7 @@ type WorksheetResult = WorksheetOptionObject & { selected: boolean };
   standalone: true,
   templateUrl: './worksheet-results.component.html',
   styleUrl: './worksheet-results.component.scss',
-  imports: [MatButtonModule, MatListModule]
+  imports: [MatButtonModule, MatDividerModule, MatListModule]
 })
 export class WorksheetResultsComponent implements AfterViewInit {
   store = inject(WorkbooksStore);

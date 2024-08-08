@@ -1,10 +1,13 @@
-<div class="flex flex-col gap-8 bg-white">
+<div class="flex flex-col h-full gap-8 bg-white">
   <mat-selection-list>
-    <h6 mat-subheader class="pt-4 px-4">Resultados disponíveis</h6>
+    <h6 mat-subheader class="text-nowrap pt-4 px-4">Resultados disponíveis</h6>
+    <mat-divider></mat-divider>
     @for (worksheet of worksheetResults(); track worksheet.value) {
       <mat-list-option [value]="worksheet.value">{{
         worksheet.label
       }}</mat-list-option>
+    } @empty {
+      <mat-list-item disabled>Nenhum resultado disponível.</mat-list-item>
     }
   </mat-selection-list>
 
@@ -14,7 +17,7 @@
       [disabled]="store.selectedWorksheetResults().length === 0"
       (click)="download()"
     >
-      Baixar planilhas selecionadas
+      <span class="text-nowrap">Baixar planilhas selecionadas</span>
     </button>
   </div>
 </div>

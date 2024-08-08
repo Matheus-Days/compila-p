@@ -2,6 +2,7 @@ import { AfterViewInit, Component, computed, inject, signal, viewChild } from '@
 import { MatListModule, MatSelectionList } from '@angular/material/list';
 import { ActivatedRoute, Router } from '@angular/router';
 import { WORKSHEET_OPTIONS, WorksheetOption, WorksheetOptionObject } from '../../stores/workbooks.utils';
+import { MatDividerModule } from '@angular/material/divider';
 
 type SelectableWorksheetOpt = WorksheetOptionObject & { selected: boolean };
 
@@ -10,7 +11,7 @@ type SelectableWorksheetOpt = WorksheetOptionObject & { selected: boolean };
   standalone: true,
   templateUrl: './worksheet-opts.component.html',
   styleUrl: './worksheet-opts.component.scss',
-  imports: [MatListModule]
+  imports: [MatDividerModule, MatListModule]
 })
 export class WorksheetOptsComponent implements AfterViewInit {
   private router = inject(Router);
