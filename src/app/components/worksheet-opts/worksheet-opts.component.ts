@@ -19,8 +19,6 @@ export class WorksheetOptsComponent implements AfterViewInit {
 
   private worksheets = viewChild.required(MatSelectionList);
 
-  readonly WORKSHEET_OPTIONS = WORKSHEET_OPTIONS;
-
   selectedOpts = signal<WorksheetOption[]>([]);
 
   worksheetOpts = computed<SelectableWorksheetOpt[]>(() => {
