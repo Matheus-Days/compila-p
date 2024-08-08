@@ -14,12 +14,12 @@ import { DateRange, MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { HeadsOrganizerComponent } from '../heads-organizer/heads-organizer.component';
 import { WorkbooksStore } from '../../stores/workbooks.store';
 import { formatRange } from '../../stores/contratos-detalhados.feature';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { ProgressBarComponent } from '../progress-bar/progress-bar.component';
 
 @Component({
   selector: 'cmp-contratos-detalhados',
@@ -34,10 +34,10 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatProgressSpinnerModule,
     ReactiveFormsModule,
     // Standalone
-    HeadsOrganizerComponent
+    HeadsOrganizerComponent,
+    ProgressBarComponent
   ],
   providers: [provideNativeDateAdapter(), DatePipe]
 })
@@ -74,6 +74,12 @@ export class ContratosDetalhadosComponent {
       const value = (this.municipioValue() || '').toLowerCase();
       return m.nome_municipio.toLowerCase().includes(value);
     });
+  });
+
+  progress = computed<number>(() => {
+    // TODO: Get progress from store
+    if (this.loading()) return -1;
+    else return 0;
   });
 
   resultNumber = computed<string>(() => {

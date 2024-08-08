@@ -62,7 +62,7 @@
           >Organizar cabeçalhos</mat-checkbox
         >
         @if (loading()) {
-          <mat-spinner diameter="30" mode="indeterminate"></mat-spinner>
+          <cmp-progress-bar class="flex-grow" [progress]="progress()" />
         }
       </div>
     </mat-card-content>

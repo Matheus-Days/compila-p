@@ -16,7 +16,6 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { WorkbooksStore } from '../../stores/workbooks.store';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -24,6 +23,7 @@ import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
 import { HeadsOrganizerComponent } from '../heads-organizer/heads-organizer.component';
 import { TceQueriesService } from '../../services/tce-queries.service';
 import { ItensNotasFiscaisQueryParams, Municipio, UnidadeGestora } from '../../services/tce.types';
+import { ProgressBarComponent } from '../progress-bar/progress-bar.component';
 
 const YEARS_SINCE_2003 = Array.from(
   { length: new Date().getFullYear() - 2003 + 1 },
@@ -43,12 +43,12 @@ const YEARS_SINCE_2003 = Array.from(
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatProgressSpinnerModule,
     MatSelectModule,
     NgxMaskDirective,
     ReactiveFormsModule,
     // Standalone
     HeadsOrganizerComponent,
+    ProgressBarComponent
   ],
   providers: [provideNgxMask()]
 })
@@ -100,7 +100,7 @@ export class ItensNotasFiscaisComponent {
   });
 
   progress = computed<number>(() => {
-    return this.store.itensNotasFiscais.progress() * 100;
+    return this.store.itensNotasFiscais.progress();
   });
 
   results = computed<string>(() => {

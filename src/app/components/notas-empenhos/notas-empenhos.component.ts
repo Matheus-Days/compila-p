@@ -13,7 +13,6 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { HeadsOrganizerComponent } from '../heads-organizer/heads-organizer.component';
 import { WorkbooksStore } from '../../stores/workbooks.store';
@@ -25,6 +24,7 @@ import {
 } from '../months-select/months-select.component';
 import { UnidadesGestorasSelectComponent } from '../unidades-gestoras-select/unidades-gestoras-select.component';
 import { MunicipioAutocompleteComponent } from '../municipio-autocomplete/municipio-autocomplete.component';
+import { ProgressBarComponent } from '../progress-bar/progress-bar.component';
 
 const YEARS_SINCE_2003 = Array.from(
   { length: new Date().getFullYear() - 2003 + 1 },
@@ -44,14 +44,14 @@ const YEARS_SINCE_2003 = Array.from(
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatProgressSpinnerModule,
     MatSelectModule,
     ReactiveFormsModule,
     // Standalone
     HeadsOrganizerComponent,
     MonthsSelectComponent,
     MunicipioAutocompleteComponent,
-    UnidadesGestorasSelectComponent
+    UnidadesGestorasSelectComponent,
+    ProgressBarComponent
   ]
 })
 export class NotasEmpenhosComponent {
@@ -99,7 +99,7 @@ export class NotasEmpenhosComponent {
   });
 
   progress = computed<number>(() => {
-    return this.store.notasEmpenhos().progress * 100;
+    return this.store.notasEmpenhos().progress;
   });
 
   results = computed<string>(() => {
