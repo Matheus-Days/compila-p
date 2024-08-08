@@ -10,10 +10,10 @@ import { MatListModule, MatSelectionList } from '@angular/material/list';
 import { WorkbooksStore } from '../../stores/workbooks.store';
 import {
   WORKSHEET_OPTS_LABELS,
-  WorkSheetOption
+  WorksheetOptionObject
 } from '../../stores/workbooks.utils';
 
-type WorksheetResult = WorkSheetOption & { selected: boolean };
+type WorksheetResult = WorksheetOptionObject & { selected: boolean };
 
 @Component({
   selector: 'cmp-worksheet-results',

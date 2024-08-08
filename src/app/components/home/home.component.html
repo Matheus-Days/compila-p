@@ -12,18 +12,18 @@
 </div>
 
 <div class="flex flex-col gap-8 p-8">
-  @defer (when showContratos()) {
-    @if (showContratos()) {
+  @defer (when worksheetOptions().includes('contratos')) {
+    @if (worksheetOptions().includes('contratos')) {
       <cmp-contratos-detalhados />
     }
   }
-  @defer (when showItensNf()) {
-    @if (showItensNf()) {
+  @defer (when worksheetOptions().includes('inf')) {
+    @if (worksheetOptions().includes('inf')) {
       <cmp-itens-notas-fiscais />
     }
   }
-  @defer (when showNotasEmpenhos()) {
-    @if (showNotasEmpenhos()) {
+  @defer (when worksheetOptions().includes('ne')) {
+    @if (worksheetOptions().includes('ne')) {
       <cmp-notas-empenhos />
     }
   }

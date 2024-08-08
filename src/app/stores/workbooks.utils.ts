@@ -8,7 +8,7 @@ export type WorksheetStoreState<T> = {
 
 export type WorksheetOption = 'contratos' | 'inf' | 'ne';
 
-export type WorkSheetOption = {
+export type WorksheetOptionObject = {
   label: string;
   value: WorksheetOption;
 };
@@ -19,7 +19,7 @@ export const WORKSHEET_OPTS_LABELS: Record<WorksheetOption, string> = {
   ne: 'Notas de empenho'
 };
 
-export const WORKSHEET_OPTIONS: WorkSheetOption[] = [
+export const WORKSHEET_OPTIONS: WorksheetOptionObject[] = [
   {
     label: WORKSHEET_OPTS_LABELS['contratos'],
     value: 'contratos'

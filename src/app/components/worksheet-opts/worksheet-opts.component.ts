@@ -1,7 +1,9 @@
-import { AfterViewInit, Component, inject, viewChild } from '@angular/core';
+import { AfterViewInit, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { MatListModule, MatSelectionList } from '@angular/material/list';
 import { ActivatedRoute, Router } from '@angular/router';
-import { WORKSHEET_OPTIONS } from '../../stores/workbooks.utils';
+import { WORKSHEET_OPTIONS, WorksheetOption, WorksheetOptionObject } from '../../stores/workbooks.utils';
+
+type SelectableWorksheetOpt = WorksheetOptionObject & { selected: boolean };
 
 @Component({
   selector: 'cmp-worksheet-opts',
@@ -18,15 +20,25 @@ export class WorksheetOptsComponent implements AfterViewInit {
 
   readonly WORKSHEET_OPTIONS = WORKSHEET_OPTIONS;
 
+  selectedOpts = signal<WorksheetOption[]>([]);
+
+  worksheetOpts = computed<SelectableWorksheetOpt[]>(() => {
+    return WORKSHEET_OPTIONS.map((worksheet) => {
+      return {
+        label: worksheet.label,
+        value: worksheet.value,
+        selected: this.selectedOpts().includes(worksheet.value)
+      };
+    });
+  });
+
   ngAfterViewInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
       const selectedWorksheets = params['worksheets']
         ? decodeURI(params['worksheets']).split(',')
         : [];
 
-      this.worksheets().options.forEach((option) => {
-        option.selected = selectedWorksheets.includes(option.value);
-      });
+      this.selectedOpts.set(selectedWorksheets as WorksheetOption[]);
     });
 
     this.worksheets().selectionChange.subscribe((event) => {

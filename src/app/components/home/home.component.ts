@@ -44,11 +44,8 @@ import { NotasEmpenhosComponent } from "../notas-empenhos/notas-empenhos.compone
 export class HomeComponent {
   private activatedRoute = inject(ActivatedRoute);
 
-  showContratos = signal(false);
-  showItensNf = signal(false);
-  showNotasEmpenhos = signal(false);
-
   worksheetOptsOpened = signal(true);
+  worksheetOptions = signal<WorksheetOption[]>([]);
   worksheetResultsOpened = signal(true);
 
   constructor() {
@@ -56,10 +53,7 @@ export class HomeComponent {
       const selectedWorksheets = (
         params['worksheets'] ? decodeURI(params['worksheets']).split(',') : []
       ) as WorksheetOption[];
-
-      this.showContratos.set(selectedWorksheets.includes('contratos'));
-      this.showItensNf.set(selectedWorksheets.includes('inf'));
-      this.showNotasEmpenhos.set(selectedWorksheets.includes('ne'));
+      this.worksheetOptions.set(selectedWorksheets);
     });
   }
 
