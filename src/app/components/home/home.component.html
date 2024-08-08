@@ -11,23 +11,42 @@
   <cmp-worksheet-opts class="flex h-full" />
 </div>
 
-<div class="flex flex-col gap-8 p-8">
-  @defer (when worksheetOptions().includes('contratos')) {
-    @if (worksheetOptions().includes('contratos')) {
-      <cmp-contratos-detalhados />
-    }
+@switch (store.municipios().status) {
+  @case ('loading') {
+    <div class="flex flex-col items-center justify-center h-full">
+      <mat-spinner diameter="48"></mat-spinner>
+      <p class="mt-4">Carregando municípios...</p>
+    </div>
   }
-  @defer (when worksheetOptions().includes('inf')) {
-    @if (worksheetOptions().includes('inf')) {
-      <cmp-itens-notas-fiscais />
-    }
+  @case ('loaded') {
+    <div class="flex flex-col gap-8 p-8">
+      @defer (when worksheetOptions().includes('contratos')) {
+        @if (worksheetOptions().includes('contratos')) {
+          <cmp-contratos-detalhados />
+        }
+      }
+      @defer (when worksheetOptions().includes('inf')) {
+        @if (worksheetOptions().includes('inf')) {
+          <cmp-itens-notas-fiscais />
+        }
+      }
+      @defer (when worksheetOptions().includes('ne')) {
+        @if (worksheetOptions().includes('ne')) {
+          <cmp-notas-empenhos />
+        }
+      }
+    </div>
   }
-  @defer (when worksheetOptions().includes('ne')) {
-    @if (worksheetOptions().includes('ne')) {
-      <cmp-notas-empenhos />
-    }
+  @case ('error') {
+    <div class="flex flex-col items-center justify-center h-full">
+      <mat-icon class="error-icon">error</mat-icon>
+      <p class="mt-4">
+        Servidor do TCE está fora do ar ou sua conexão de internet está
+        instável.
+      </p>
+    </div>
   }
-</div>
+}
 
 <div
   [@opened]="worksheetResultsOpened()"

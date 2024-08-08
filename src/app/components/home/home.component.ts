@@ -9,6 +9,7 @@ import { ContratosDetalhadosComponent } from '../contratos-detalhados/contratos-
 import { ItensNotasFiscaisComponent } from '../itens-notas-fiscais/itens-notas-fiscais.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import {
   openedAnimation,
   slideLeftAnimation,
@@ -21,6 +22,7 @@ import {
 import { WorksheetResultsComponent } from '../worksheet-results/worksheet-results.component';
 import { WorksheetOption } from '../../stores/workbooks.utils';
 import { NotasEmpenhosComponent } from "../notas-empenhos/notas-empenhos.component";
+import { WorkbooksStore } from '../../stores/workbooks.store';
 
 @Component({
   selector: 'cmp-home',
@@ -33,6 +35,7 @@ import { NotasEmpenhosComponent } from "../notas-empenhos/notas-empenhos.compone
     MatIconModule,
     MatListModule,
     MatSidenavModule,
+    MatProgressSpinnerModule,
     // Standalone
     ContratosDetalhadosComponent,
     ItensNotasFiscaisComponent,
@@ -43,6 +46,7 @@ import { NotasEmpenhosComponent } from "../notas-empenhos/notas-empenhos.compone
 })
 export class HomeComponent {
   private activatedRoute = inject(ActivatedRoute);
+  store = inject(WorkbooksStore);
 
   worksheetOptsOpened = signal(true);
   worksheetOptions = signal<WorksheetOption[]>([]);
