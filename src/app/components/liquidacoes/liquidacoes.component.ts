@@ -1,30 +1,25 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MunicipioAutocompleteComponent } from '../municipio-autocomplete/municipio-autocomplete.component';
 import {
   FormControl,
   FormGroup,
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
-import { HeadsOrganizerComponent } from '../heads-organizer/heads-organizer.component';
 import { TceQueriesService } from '../../services/tce-queries.service';
-import {
-  ItensNotasFiscaisQueryParams,
-  Municipio,
-  UnidadeGestora
-} from '../../services/tce.types';
-import { ProgressBarComponent } from '../progress-bar/progress-bar.component';
-import { ItensNotasFicaisStore } from './itens-notas-fiscais.store';
-import { MunicipioAutocompleteComponent } from '../municipio-autocomplete/municipio-autocomplete.component';
+import { LiquidacoesQueryParams, Municipio } from '../../services/tce.types';
+import { MatSelectModule } from '@angular/material/select';
 import { UnidadesGestorasSelectComponent } from '../unidades-gestoras-select/unidades-gestoras-select.component';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatIconModule } from '@angular/material/icon';
+import { ProgressBarComponent } from '../progress-bar/progress-bar.component';
+import { HeadsOrganizerComponent } from '../heads-organizer/heads-organizer.component';
+import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { LiquidacoesStore } from './liquidacoes.store';
 
 const YEARS_SINCE_2003 = Array.from(
   { length: new Date().getFullYear() - 2003 + 1 },
@@ -32,14 +27,13 @@ const YEARS_SINCE_2003 = Array.from(
 );
 
 @Component({
-  selector: 'cmp-itens-notas-fiscais',
+  selector: 'cmp-liquidacoes',
   standalone: true,
-  templateUrl: './itens-notas-fiscais.component.html',
+  templateUrl: './liquidacoes.component.html',
   imports: [
     MatButtonModule,
     MatCardModule,
     MatCheckboxModule,
-    MatDatepickerModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -52,10 +46,10 @@ const YEARS_SINCE_2003 = Array.from(
     ProgressBarComponent,
     UnidadesGestorasSelectComponent
   ],
-  providers: [provideNgxMask(), ItensNotasFicaisStore]
+  providers: [provideNgxMask(), LiquidacoesStore]
 })
-export class ItensNotasFiscaisComponent {
-  store = inject(ItensNotasFicaisStore);
+export class LiquidacoesComponent {
+  store = inject(LiquidacoesStore);
   tceQueries = inject(TceQueriesService);
 
   readonly years = YEARS_SINCE_2003;
@@ -65,14 +59,14 @@ export class ItensNotasFiscaisComponent {
     validators: Validators.required,
     nonNullable: true
   });
-  
+
   codigoOrgao = new FormControl('', { nonNullable: true });
-  
+
   municipioControl = new FormControl('', {
     validators: Validators.required,
     nonNullable: true
   });
-  
+
   versaoExercicioOrcamento = new FormControl('00', {
     validators: Validators.required,
     nonNullable: true
@@ -86,26 +80,28 @@ export class ItensNotasFiscaisComponent {
   });
   //#endregion
 
+  //#region Signals
   selectedMunicipio = signal<Municipio | undefined>(undefined);
 
   showHeadsOrganizer = signal<boolean>(false);
-
-  unidadesGestoras = signal<UnidadeGestora[]>([]);
 
   loading = computed<boolean>(() => {
     return this.store.status() === 'loading';
   });
 
-  results = computed<string>(() => {
-    if (this.store.status() === 'loaded')
-      return `${this.store.data().length} itens encontrados.`;
-    else return '';
+  resultsMsg = computed<string>(() => {
+    if (this.store.status() === 'loaded') {
+      return `${this.store.data().length} liquidações encontradas`;
+    } else return '';
   });
+  //#endregion
 
   constructor() {
     this.versaoExercicioOrcamento.disable();
 
     this.anoExercicioOrcamento.valueChanges.subscribe((value) => {
+      this.codigoOrgao.disable();
+
       if (value < 2007) this.versaoExercicioOrcamento.enable();
       else this.versaoExercicioOrcamento.disable();
     });
@@ -123,7 +119,7 @@ export class ItensNotasFiscaisComponent {
 
     const exercicio_orcamento = `${this.anoExercicioOrcamento.value}${this.versaoExercicioOrcamento.value}`;
 
-    const params: ItensNotasFiscaisQueryParams = {
+    const params: LiquidacoesQueryParams = {
       codigo_municipio: selectedMunicipio.codigo_municipio,
       exercicio_orcamento,
       deslocamento: 0,

@@ -1,20 +1,20 @@
 import {
   patchState,
   signalStore,
-  withComputed,
   withHooks,
   withMethods,
   withState
 } from '@ngrx/signals';
-import { withContratosDetalhados } from './contratos-detalhados.feature';
-import { computed, inject } from '@angular/core';
+import { inject } from '@angular/core';
 import { withMunicipios } from './municipios.feature';
 import { WorkBook } from 'xlsx';
 import { WorkbookService } from '../services/workbook.service';
-import { withItensNotasFiscais } from './itens-notas-fiscais.feature';
-import { withNotasEmpenhos } from './notas-empenhos.feature';
 import { WorkbookWorkerMessage } from '../services/workbook.worker';
-import { WorksheetOption } from './workbooks.utils';
+import {
+  WORKSHEET_OPTS_LABELS,
+  WorksheetOption,
+  WorksheetResult
+} from './worksheet.utils';
 
 type WorkbookState = {
   message: string;
@@ -22,85 +22,67 @@ type WorkbookState = {
   selectedWorksheetResults: WorksheetOption[];
   status: 'idle' | 'creating' | 'downloading';
   workbook: WorkBook | undefined;
+  worksheetResults: WorksheetResult[];
+};
+
+const INITIAL_STATE: WorkbookState = {
+  message: '',
+  selectedWorksheetOpts: [],
+  selectedWorksheetResults: [],
+  status: 'idle',
+  workbook: undefined,
+  worksheetResults: []
 };
 
 export const WorkbooksStore = signalStore(
   { providedIn: 'root' },
 
-  withState<WorkbookState>({
-    message: '',
-    selectedWorksheetOpts: [],
-    selectedWorksheetResults: [],
-    status: 'idle',
-    workbook: undefined
-  }),
+  withState(INITIAL_STATE),
 
   withMunicipios(),
 
-  withContratosDetalhados(),
-
-  withItensNotasFiscais(),
-
-  withNotasEmpenhos(),
-
-  withComputed((store) => {
-    const availableWorksheets = computed<WorksheetOption[]>(() => {
-      const worksheets: WorksheetOption[] = [];
-      if (store.contratosDetalhados().status === 'loaded')
-        worksheets.push('contratos');
-      if (store.itensNotasFiscais().status === 'loaded') worksheets.push('inf');
-      if (store.notasEmpenhos().status === 'loaded') worksheets.push('ne');
-      return worksheets;
-    });
-
-    return {
-      availableWorksheets
-    };
-  }),
-
   withMethods((store, workbookService = inject(WorkbookService)) => ({
-    clear() {
-      store.clearContratosDetalhados();
-      store.clearItensNotasFiscais();
-      store.clearNotasEmpenhos();
+    addWorksheetResult(result: WorksheetResult) {
+      const currResults = store.worksheetResults();
+
+      const existingResultIndex = currResults.findIndex(
+        (r) => r.type === result.type
+      );
+
+      if (existingResultIndex !== -1) {
+        currResults[existingResultIndex] = result;
+      } else {
+        currResults.push(result);
+      }
+
+      patchState(store, { worksheetResults: [...currResults] });
+    },
+
+    removeWorksheetResult(type: WorksheetOption) {
       patchState(store, {
-        status: 'idle',
-        message: '',
-        selectedWorksheetOpts: [],
-        workbook: undefined,
+        worksheetResults: store
+          .worksheetResults()
+          .filter((result) => result.type !== type)
       });
     },
 
+    clear() {
+      patchState(store, INITIAL_STATE);
+    },
+
     async createWorkbook(): Promise<void> {
-      const cd = store.contratosDetalhados();
-      const inf = store.itensNotasFiscais();
-      const ne = store.notasEmpenhos();
       const selectedWorksheets = store.selectedWorksheetResults();
-      const worksheets: WorkbookWorkerMessage['worksheets'] = [];
 
-      if (selectedWorksheets.includes('contratos')) {
-        worksheets.push({
-          name: 'Contratos',
-          data: cd.data,
-          header: cd.headers
+      const worksheets: WorkbookWorkerMessage['worksheets'] = store
+        .worksheetResults()
+        .filter((res) => selectedWorksheets.includes(res.type))
+        .map((res) => {
+          return {
+            name: WORKSHEET_OPTS_LABELS[res.type],
+            data: res.data,
+            header: res.headers
+          };
         });
-      }
-
-      if (selectedWorksheets.includes('inf')) {
-        worksheets.push({
-          name: 'Itens de nota fiscal',
-          data: inf.data,
-          header: inf.headers
-        });
-      }
-
-      if (selectedWorksheets.includes('ne')) {
-        worksheets.push({
-          name: 'Notas de empenho',
-          data: ne.data,
-          header: ne.headers
-        });
-      }
 
       patchState(store, { status: 'creating', message: 'Criando planilha...' });
 

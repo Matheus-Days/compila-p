@@ -5,24 +5,11 @@
     </mat-card-title>
     <mat-card-content>
       <form [formGroup]="form" class="flex gap-2">
-        <mat-form-field>
-          <mat-label>Município</mat-label>
-          <input
-            type="text"
-            placeholder="Digite o nome do município"
-            matInput
-            [formControl]="municipioControl"
-            [matAutocomplete]="auto"
-          />
-          <mat-autocomplete #auto="matAutocomplete">
-            @for (municipio of municipios(); track municipio.codigo_municipio) {
-              <mat-option [value]="municipio.nome_municipio"
-                >{{ municipio.codigo_municipio }}:
-                {{ municipio.nome_municipio }}</mat-option
-              >
-            }
-          </mat-autocomplete>
-        </mat-form-field>
+        <cmp-municipio-autocomplete
+          [control]="municipioControl"
+          (municipioSelected)="selectedMunicipio.set($event)"
+        />
+
         <mat-form-field>
           <mat-label>Selecione um período</mat-label>
           <mat-date-range-input
@@ -66,18 +53,18 @@
         }
       </div>
     </mat-card-content>
-    @if (message()) {
+    @if (store.message()) {
       <mat-card-footer class="p-4">
-        {{ message() }}
-        {{ resultNumber() }}
+        {{ store.message() }}
+        {{ resultsMsg() }}
       </mat-card-footer>
     }
   </mat-card>
   
   @if (showHeadsOrganizer()) {
     <cmp-heads-organizer
-      [heads]="store.contratosDetalhados().headers"
-      (headsChanged)="store.changeContratosDetalhadosHeadersOrder($any($event))"
+      [heads]="store.headers()"
+      (headsChanged)="store.changeHeadersOrder($any($event))"
     ></cmp-heads-organizer>
   }
 </div>

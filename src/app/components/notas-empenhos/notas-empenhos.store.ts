@@ -1,19 +1,15 @@
+import { NotasEmpenhos, NotasEmpenhosQueryParams } from '../../services/tce.types';
+import { WorkerObservable } from '../../services/tce-queries.service';
 import {
-  patchState,
-  signalStoreFeature,
-  withMethods,
-  withState
-} from '@ngrx/signals';
-import { NotasEmpenhos, NotasEmpenhosQueryParams } from '../services/tce.types';
-import { TceQueriesService } from '../services/tce-queries.service';
-import { inject } from '@angular/core';
-import { WorksheetStoreState } from './workbooks.utils';
-import { MonthValue } from '../components/months-select/months-select.component';
+  createWorksheetStore,
+  WorksheetStoreFetchFn,
+  WorksheetStoreState
+} from '../../stores/worksheet.utils';
+import { MonthValue } from '../months-select/months-select.component';
 import PQueue from 'p-queue';
+import { Observable } from 'rxjs';
 
-type NotasEmpenhosState = {
-  notasEmpenhos: WorksheetStoreState<NotasEmpenhos>;
-};
+type NotasEmpenhosState = WorksheetStoreState<NotasEmpenhos>;
 
 export type DataReferenciaEmpenho = {
   ano: number;
@@ -71,87 +67,54 @@ export const INITIAL_HEADERS_ORDER: (keyof NotasEmpenhos)[] = [
 ];
 
 const INITIAL_STATE: NotasEmpenhosState = {
-  notasEmpenhos: {
-    data: [],
-    headers: INITIAL_HEADERS_ORDER,
-    message: '',
-    progress: -1,
-    status: 'idle'
-  }
+  data: [],
+  headers: INITIAL_HEADERS_ORDER,
+  message: '',
+  progress: -1,
+  status: 'idle'
 };
 
-export function withNotasEmpenhos() {
-  return signalStoreFeature(
-    withState(INITIAL_STATE),
+const fetchNotasEmpenhos: WorksheetStoreFetchFn<
+  NotasEmpenhos,
+  CustomNotasEmpenhosQueryParams
+> = (customParams, tceQueriesService): WorkerObservable<NotasEmpenhos[]> => {
+  return new Observable((subscriber) => {
+    try {
+      const queue = new PQueue({ concurrency: 6 });
 
-    withMethods((store, tceQueries = inject(TceQueriesService)) => ({
-      changeNotasEmpenhosHeadersOrder(headers: (keyof NotasEmpenhos)[]) {
-        patchState(store, {
-          notasEmpenhos: {
-            ...store.notasEmpenhos(),
-            headers
-          }
+      const queriesParams = prepareQueries(customParams);
+
+      const requests = queriesParams.map((params) => {
+        return async () => tceQueriesService.fetchNotasEmpenho(params);
+      });
+
+      queue.addListener('next', () => {
+        subscriber.next({
+          data: [],
+          progress: (queriesParams.length - queue.size) / queriesParams.length
         });
-      },
+      });
 
-      clearNotasEmpenhos() {
-        patchState(store, {
-          notasEmpenhos: INITIAL_STATE.notasEmpenhos
-        });
-      },
+      queue.addAll(requests).then((res) => {
+        const data = res.flat();
 
-      async fetchNotasEmpenhos(customParams: CustomNotasEmpenhosQueryParams) {
-        patchState(store, {
-          notasEmpenhos: {
-            ...store.notasEmpenhos(),
-            status: 'loading',
-            message: 'Buscando...'
-          }
+        subscriber.next({
+          data,
+          progress: 1
         });
 
-        try {
-          const queue = new PQueue({ concurrency: 6 });
+        subscriber.complete();
+      });
+    } catch (e) {
+      subscriber.error(e);
+    }
+  });
+};
 
-          const queriesParams = prepareQueries(customParams);
-
-          const requests = queriesParams.map((params) => {
-            return async () => tceQueries.fetchNotasEmpenho(params);
-          });
-
-          queue.addListener('next', () => {
-            patchState(store, {
-              notasEmpenhos: {
-                ...store.notasEmpenhos(),
-                progress:
-                  (queriesParams.length - queue.size) / queriesParams.length
-              }
-            });
-          });
-
-          const data = (await queue.addAll(requests)).flat();
-
-          patchState(store, {
-            notasEmpenhos: {
-              ...store.notasEmpenhos(),
-              data,
-              status: 'loaded',
-              message: 'Busca concluída.'
-            }
-          });
-        } catch (e) {
-          console.error(e);
-          patchState(store, {
-            notasEmpenhos: {
-              ...store.notasEmpenhos(),
-              status: 'error',
-              message: 'Erro durante busca.'
-            }
-          });
-        }
-      }
-    }))
-  );
-}
+export const NotasEmpenhosStore = createWorksheetStore<
+  NotasEmpenhos,
+  CustomNotasEmpenhosQueryParams
+>(INITIAL_STATE, fetchNotasEmpenhos, 'ne');
 
 function transformCodigoOrgao(cod: number): string {
   return cod.toString().padStart(2, '0');

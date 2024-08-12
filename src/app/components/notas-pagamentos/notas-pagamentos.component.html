@@ -1,7 +1,7 @@
 <div class="flex flex-col gap-8">
   <mat-card class="w-full">
     <mat-card-title>
-      <div class="m-4">Buscar itens de notas fiscais</div>
+      <div class="m-4">Buscar notas de pagamentos</div>
     </mat-card-title>
     <mat-card-content>
       <form [formGroup]="form" class="flex gap-2 flex-wrap">
@@ -30,16 +30,16 @@
         </mat-form-field>
 
         <cmp-unidade-gestora-select
-          label="Código do órgão"
-          [nomeMunicipio]="municipioControl.value"
-          [anoExercicioOrcamento]="anoExercicioOrcamento.value"
+          [disableSelectAll]="true"
           [control]="codigoOrgao"
-          hint="Vazio para todos."
+          [codigoMunicipio]="selectedMunicipio()?.codigo_municipio"
+          [anoExercicioOrcamento]="anoExercicioOrcamento.value"
+          hint="Vazio para todas."
         />
       </form>
 
       <div class="flex gap-4 items-center">
-        <button mat-flat-button [disabled]="form.invalid" (click)="search()">
+        <button mat-flat-button [disabled]="form.invalid || !selectedMunicipio()" (click)="search()">
           Pesquisar
         </button>
         <button mat-button [disabled]="form.pristine" (click)="clear()">

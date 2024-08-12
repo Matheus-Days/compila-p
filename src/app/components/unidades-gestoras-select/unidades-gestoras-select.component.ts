@@ -7,6 +7,19 @@ import { MatSelectModule } from '@angular/material/select';
 import { map } from 'rxjs';
 import { UnidadeGestora } from '../../services/tce.types';
 import { TceQueriesService } from '../../services/tce-queries.service';
+import { WorkbooksStore } from '../../stores/workbooks.store';
+
+export type FixedUnidadeGestora = Omit<
+  UnidadeGestora,
+  'codigo_unidade_gestora'
+> & {
+  codigo_unidade_gestora: string;
+};
+
+const fixCodUG = (ug: UnidadeGestora): FixedUnidadeGestora => ({
+  ...ug,
+  codigo_unidade_gestora: ug.codigo_unidade_gestora.toString().padStart(2, '0')
+});
 
 @Component({
   selector: 'cmp-unidade-gestora-select',
@@ -21,6 +34,7 @@ import { TceQueriesService } from '../../services/tce-queries.service';
   styleUrl: './unidades-gestoras-select.component.scss'
 })
 export class UnidadesGestorasSelectComponent {
+  workbookStore = inject(WorkbooksStore)
   tceQueries = inject(TceQueriesService);
 
   label = input('Unidade Gestora');
@@ -28,7 +42,9 @@ export class UnidadesGestorasSelectComponent {
   disableSelectAll = input(false);
   control = input<FormControl>(new FormControl(this.multiple() ? [] : '00'));
   codigoMunicipio = input('', { transform: (val) => String(val) });
+  nomeMunicipio = input('');
   anoExercicioOrcamento = input('', { transform: (val) => String(val) + '00' });
+  hint = input('');
 
   isAllSelected = toSignal(
     this.control().valueChanges.pipe(
@@ -36,23 +52,41 @@ export class UnidadesGestorasSelectComponent {
     )
   );
 
-  unidadesGestoras = signal<UnidadeGestora[]>([]);
+  unidadesGestoras = signal<FixedUnidadeGestora[]>([]);
 
   constructor() {
-    effect(async () => {
-      const codigo_municipio = this.codigoMunicipio();
-      const exercicio_orcamento = this.anoExercicioOrcamento();
+    effect(
+      async () => {
+        const exercicio_orcamento = this.anoExercicioOrcamento();
 
-      if (codigo_municipio && exercicio_orcamento) {
-        const unidadesGestoras = await this.tceQueries.fetchUnidadesGestoras({
-          codigo_municipio,
-          exercicio_orcamento
-        });
-        this.unidadesGestoras.set(unidadesGestoras);
-      } else {
-        this.unidadesGestoras.set([]);
-      }
-    });
+        const year = parseInt(exercicio_orcamento.substring(0, 4));
+        if (year <= 2007) {
+          this.control().disable();
+        } else {
+          this.control().enable();
+        }
+
+        let codigo_municipio = '';
+
+        if (this.codigoMunicipio()) codigo_municipio = this.codigoMunicipio();
+        else {
+          const municipio = this.workbookStore.municipios().data.find(m => m.nome_municipio === this.nomeMunicipio())
+          if (municipio) codigo_municipio = municipio.codigo_municipio;
+        }
+
+        if (codigo_municipio && exercicio_orcamento) {
+          const unidadesGestoras = await this.tceQueries.fetchUnidadesGestoras({
+            codigo_municipio,
+            exercicio_orcamento
+          });
+          const fixed = unidadesGestoras.map(fixCodUG);
+          this.unidadesGestoras.set(fixed);
+        } else {
+          this.unidadesGestoras.set([]);
+        }
+      },
+      { allowSignalWrites: true }
+    );
 
     effect(() => {
       if (this.unidadesGestoras().length === 0) this.control().disable();

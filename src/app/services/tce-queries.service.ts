@@ -5,9 +5,13 @@ import {
   Contrato,
   ItensNotasFiscais,
   ItensNotasFiscaisQueryParams,
+  Liquidacao,
+  LiquidacoesQueryParams,
   Municipio,
+  NotaPagamento,
   NotasEmpenhos,
   NotasEmpenhosQueryParams,
+  NotasPagamentosQueryParams,
   UnidadeGestora,
   UnidadesGestorasQueryParams
 } from './tce.types';
@@ -15,6 +19,8 @@ import { FetchWorkerMessage, SearchParams } from './fetcher.worker';
 import { EnhancedFetchWorkerResponse } from './enhanced-fetch.worker';
 import { Observable } from 'rxjs';
 import { stringifyParams } from './utils';
+
+export type WorkerObservable<T> = Observable<EnhancedFetchWorkerResponse<T>>;
 
 @Injectable({
   providedIn: 'root'
@@ -32,11 +38,20 @@ export class TceQueriesService {
     return fetchAll<Contrato[]>(`${this.BASE_URL}/contrato`, params);
   }
 
-  async fetchItensNotasFiscais(
+  fetchItensNotasFiscais(
     params: ItensNotasFiscaisQueryParams
-  ): Promise<ItensNotasFiscais[]> {
-    return fetchAll<ItensNotasFiscais[]>(
+  ): WorkerObservable<ItensNotasFiscais[]> {
+    return fetchAllEnhanced<ItensNotasFiscais[]>(
       `${this.BASE_URL}/itens_notas_fiscais`,
+      params
+    );
+  }
+
+  fetchLiquidacoes(
+    params: LiquidacoesQueryParams
+  ): WorkerObservable<Liquidacao[]> {
+    return fetchAllEnhanced<Liquidacao[]>(
+      `${this.BASE_URL}/liquidacoes`,
       params
     );
   }
@@ -53,11 +68,11 @@ export class TceQueriesService {
     return fetchAll<NotasEmpenhos[]>(`${this.BASE_URL}/notas_empenhos`, params);
   }
 
-  fetchItensNotasFiscaisEnhanced(
-    params: ItensNotasFiscaisQueryParams
-  ): Observable<EnhancedFetchWorkerResponse<ItensNotasFiscais[]>> {
-    return fetchAllEnhanced<ItensNotasFiscais[]>(
-      `${this.BASE_URL}/itens_notas_fiscais`,
+  fetchNotasPagamentos(
+    params: NotasPagamentosQueryParams
+  ): WorkerObservable<NotaPagamento[]> {
+    return fetchAllEnhanced<NotaPagamento[]>(
+      `${this.BASE_URL}/notas_pagamentos`,
       params
     );
   }
@@ -112,12 +127,18 @@ function fetchAllEnhanced<T>(
     }
   );
 
+  let progress = 0;
+
   const fetchAll$ = new Observable<EnhancedFetchWorkerResponse<T>>(
     (subscribe) => {
       worker.onmessage = ({
         data
       }: MessageEvent<EnhancedFetchWorkerResponse<T>>) => {
-        subscribe.next(data);
+        progress = progress > data.progress ? progress : data.progress;
+        subscribe.next({
+          data: data.data,
+          progress
+        });
         if (data.progress === 1) {
           subscribe.complete();
         }

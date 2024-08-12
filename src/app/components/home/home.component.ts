@@ -20,9 +20,11 @@ import {
   WorksheetOptsComponent
 } from '../worksheet-opts/worksheet-opts.component';
 import { WorksheetResultsComponent } from '../worksheet-results/worksheet-results.component';
-import { WorksheetOption } from '../../stores/workbooks.utils';
+import { WorksheetOption } from '../../stores/worksheet.utils';
 import { NotasEmpenhosComponent } from "../notas-empenhos/notas-empenhos.component";
 import { WorkbooksStore } from '../../stores/workbooks.store';
+import { LiquidacoesComponent } from "../liquidacoes/liquidacoes.component";
+import { NotasPagamentosComponent } from "../notas-pagamentos/notas-pagamentos.component";
 
 @Component({
   selector: 'cmp-home',
@@ -41,7 +43,9 @@ import { WorkbooksStore } from '../../stores/workbooks.store';
     ItensNotasFiscaisComponent,
     WorksheetOptsComponent,
     WorksheetResultsComponent,
-    NotasEmpenhosComponent
+    NotasEmpenhosComponent,
+    LiquidacoesComponent,
+    NotasPagamentosComponent
 ]
 })
 export class HomeComponent {

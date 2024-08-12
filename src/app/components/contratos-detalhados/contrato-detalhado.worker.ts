@@ -1,4 +1,4 @@
-import { GenerateContratoDetalhadoParams } from './contratos-detalhados.feature';
+import { GenerateContratoDetalhadoParams } from './contratos-detalhados.store';
 
 onmessage = (event: MessageEvent<GenerateContratoDetalhadoParams>) => {
   const { contratos, contratados } = event.data;

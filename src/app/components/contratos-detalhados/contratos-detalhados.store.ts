@@ -1,23 +1,14 @@
 import {
-  patchState,
-  signalStoreFeature,
-  withMethods,
-  withState
-} from '@ngrx/signals';
-import { inject } from '@angular/core';
-import { TceQueriesService } from '../services/tce-queries.service';
-import {
   Contratados,
   Contrato,
   ContratoQueryParams
-} from '../services/tce.types';
+} from '../../services/tce.types';
 import { DateRange } from '@angular/material/datepicker';
 import { DatePipe } from '@angular/common';
-import { WorksheetStoreState } from './workbooks.utils';
+import { createWorksheetStore, WorksheetStoreFetchFn, WorksheetStoreState } from '../../stores/worksheet.utils';
+import { Observable } from 'rxjs';
 
-type ContratosDetalhadosState = {
-  contratosDetalhados: WorksheetStoreState<ContratoDetalhado>;
-};
+type ContratosDetalhadosState = WorksheetStoreState<ContratoDetalhado>;
 
 export const INITIAL_HEADERS_ORDER: (keyof ContratoDetalhado)[] = [
   'numero_contrato',
@@ -41,76 +32,46 @@ export const INITIAL_HEADERS_ORDER: (keyof ContratoDetalhado)[] = [
 ];
 
 const INITIAL_STATE: ContratosDetalhadosState = {
-  contratosDetalhados: {
-    data: [],
-    headers: INITIAL_HEADERS_ORDER,
-    message: '',
-    progress: -1,
-    status: 'idle'
-  }
+  data: [],
+  headers: INITIAL_HEADERS_ORDER,
+  message: '',
+  progress: -1,
+  status: 'idle'
 };
 
-export function withContratosDetalhados() {
-  return signalStoreFeature(
-    withState(INITIAL_STATE),
 
-    withMethods((store, tceQueriesService = inject(TceQueriesService)) => ({
-      changeContratosDetalhadosHeadersOrder(
-        headers: (keyof ContratoDetalhado)[]
-      ) {
-        patchState(store, {
-          contratosDetalhados: {
-            ...store.contratosDetalhados(),
-            headers
-          }
-        });
-      },
+const fetchContratosDetalhados: WorksheetStoreFetchFn<
+  ContratoDetalhado,
+  ContratoQueryParams
+> = (params, tceQueriesService) => {
+  return new Observable((subscriber) => {
+    tceQueriesService
+      .fetchContratos(params)
+      .then((contratos) => {
+        tceQueriesService
+          .fetchContratados(params)
+          .then((contratados) => {
+            generateContratoDetalhado({ contratos, contratados })
+              .then((contratosDetalhados) => {
+                subscriber.next({
+                  data: contratosDetalhados,
+                  progress: 1
+                });
+                subscriber.complete();
+              })
+              .catch((e) => subscriber.error(e));
+          })
+          .catch((e) => subscriber.error(e));
+      })
+      .catch((e) => subscriber.error(e));
+  });
+};
 
-      clearContratosDetalhados() {
-        patchState(store, {
-          contratosDetalhados: INITIAL_STATE.contratosDetalhados
-        });
-      },
-
-      async fetchContratosDetalhados(params: ContratoQueryParams) {
-        patchState(store, {
-          contratosDetalhados: {
-            ...store.contratosDetalhados(),
-            message: 'Buscando...',
-            status: 'loading'
-          }
-        });
-
-        try {
-          const contratos = await tceQueriesService.fetchContratos(params);
-          const contratados = await tceQueriesService.fetchContratados(params);
-          const contratosDetalhados = await generateContratoDetalhado({
-            contratos,
-            contratados
-          });
-
-          patchState(store, {
-            contratosDetalhados: {
-              ...store.contratosDetalhados(),
-              data: contratosDetalhados,
-              message: 'Busca concluída.',
-              status: 'loaded'
-            }
-          });
-        } catch (e) {
-          console.error(e);
-          patchState(store, {
-            contratosDetalhados: {
-              ...store.contratosDetalhados(),
-              message: 'Erro durante busca.',
-              status: 'error'
-            }
-          });
-        }
-      }
-    }))
-  );
-}
+export const ContratosDetalhadosStore = createWorksheetStore<ContratoDetalhado, ContratoQueryParams>(
+  INITIAL_STATE,
+  fetchContratosDetalhados,
+  'contratos'
+)
 
 export type ContratoDetalhado = Pick<
   Contrato,

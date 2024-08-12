@@ -1,6 +1,6 @@
 <div class="flex gap-2 items-center">
   <mat-progress-bar [mode]="mode()" [value]="value()" />
   @if (mode() === 'determinate') {
-    <span>{{ value() }}%</span>
+    <span class="w-10">{{ value() }}%</span>
   }
 </div>

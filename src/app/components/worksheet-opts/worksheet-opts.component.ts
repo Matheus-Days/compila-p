@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { MatListModule, MatSelectionList } from '@angular/material/list';
 import { ActivatedRoute, Router } from '@angular/router';
-import { WORKSHEET_OPTIONS, WorksheetOption, WorksheetOptionObject } from '../../stores/workbooks.utils';
+import { WORKSHEET_OPTIONS, WorksheetOption, WorksheetOptionObject } from '../../stores/worksheet.utils';
 import { MatDividerModule } from '@angular/material/divider';
 
 type SelectableWorksheetOpt = WorksheetOptionObject & { selected: boolean };

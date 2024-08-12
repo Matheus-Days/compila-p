@@ -13,7 +13,7 @@ export class ProgressBarComponent {
   value = computed<number | undefined>(() => {
     const progress = this.progress();
     if (progress === -1) return undefined;
-    else return progress * 100;
+    else return Math.round(progress * 100);
   });
 
   mode = computed<'determinate' | 'indeterminate'>(() => {

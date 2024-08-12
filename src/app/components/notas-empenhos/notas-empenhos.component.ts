@@ -15,7 +15,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { HeadsOrganizerComponent } from '../heads-organizer/heads-organizer.component';
-import { WorkbooksStore } from '../../stores/workbooks.store';
 import { TceQueriesService } from '../../services/tce-queries.service';
 import { Municipio } from '../../services/tce.types';
 import {
@@ -25,6 +24,7 @@ import {
 import { UnidadesGestorasSelectComponent } from '../unidades-gestoras-select/unidades-gestoras-select.component';
 import { MunicipioAutocompleteComponent } from '../municipio-autocomplete/municipio-autocomplete.component';
 import { ProgressBarComponent } from '../progress-bar/progress-bar.component';
+import { NotasEmpenhosStore } from './notas-empenhos.store';
 
 const YEARS_SINCE_2003 = Array.from(
   { length: new Date().getFullYear() - 2003 + 1 },
@@ -52,10 +52,11 @@ const YEARS_SINCE_2003 = Array.from(
     MunicipioAutocompleteComponent,
     UnidadesGestorasSelectComponent,
     ProgressBarComponent
-  ]
+  ],
+  providers: [NotasEmpenhosStore]
 })
 export class NotasEmpenhosComponent {
-  store = inject(WorkbooksStore);
+  store = inject(NotasEmpenhosStore);
   tceQueries = inject(TceQueriesService);
 
   readonly years = YEARS_SINCE_2003;
@@ -91,26 +92,19 @@ export class NotasEmpenhosComponent {
   showHeadsOrganizer = signal<boolean>(false);
 
   loading = computed<boolean>(() => {
-    return this.store.notasEmpenhos().status === 'loading';
+    return this.store.status() === 'loading';
   });
 
-  message = computed<string>(() => {
-    return this.store.notasEmpenhos().message;
-  });
-
-  progress = computed<number>(() => {
-    return this.store.notasEmpenhos().progress;
-  });
-
-  results = computed<string>(() => {
-    if (this.store.notasEmpenhos().status === 'loaded')
-      return `${this.store.notasEmpenhos().data.length} itens encontrados.`;
+  resultsMsg = computed<string>(() => {
+    if (this.store.status() === 'loaded')
+      return `${this.store.data().length} itens encontrados.`;
     else return '';
   });
   //#endregion
 
   clear(): void {
-    this.store.clearNotasEmpenhos();
+    this.selectedMunicipio.set(undefined);
+    this.store.clear();
     this.form.reset();
   }
 
@@ -118,7 +112,7 @@ export class NotasEmpenhosComponent {
     const selectedMunicipio = this.selectedMunicipio();
     if (!selectedMunicipio) return;
 
-    this.store.fetchNotasEmpenhos({
+    this.store.fetchData({
       codigo_municipio: selectedMunicipio.codigo_municipio,
       dre: {
         ano: this.anoExercicioOrcamento.value,

@@ -16,6 +16,14 @@ export type EnhancedFetchWorkerResponse<T = object> = {
   progress: number;
 };
 
+type ApiResponse = {
+  data: {
+    data: object[]
+    length: number;
+    total: number;
+  };
+};
+
 addEventListener('message', ({ data }: MessageEvent<FetchWorkerMessage>) => {
   const { url, searchParams } = data;
   fetchAll(url, searchParams);
@@ -24,53 +32,36 @@ addEventListener('message', ({ data }: MessageEvent<FetchWorkerMessage>) => {
 async function fetchAll(
   url: string,
   searchParams: SearchParams,
-  previousResults: object[] = []
+  previousResults: object[] = [],
+  retry = 0
 ): Promise<void> {
   const params = new URLSearchParams(stringifyParams(searchParams));
   const searchQueryUrl = `${url}?${params}`;
 
-  const result = await (await fetch(searchQueryUrl)).json();
+  const result: ApiResponse = await (await fetch(searchQueryUrl)).json();
 
-  let progress: number;
+  if (result.data.length === 0) retry += 1;
 
-  if ('data' in result && 'total' in result.data) {
-    if (result.data.total === 0) {
-      sendResponse({ data: [], progress: 1 });
-      return;
-    }
-    progress = (previousResults.length / result.data.total);
-  } else {
-    progress = -1;
+  previousResults.push(...result.data.data)
+  const progress = previousResults.length / result.data.total;
+
+  if (progress === 1 || retry === 1) {
+    sendResponse({ data: previousResults, progress: 1 });
+    return;
   }
 
-  if (result.data.length === 0) {
-    sendResponse({ data: previousResults, progress });
-  } else {
-    sendResponse({ data: [], progress });
-    previousResults.push(...findData(result));
+  sendResponse({ data: [], progress });
 
-    fetchAll(
-      url,
-      {
-        ...searchParams,
-        deslocamento: searchParams.deslocamento + 100
-      },
-      previousResults
-    );
-  }
+  fetchAll(
+    url,
+    {
+      ...searchParams,
+      deslocamento: searchParams.deslocamento + 100
+    },
+    previousResults
+  );
 }
 
 function sendResponse(res: EnhancedFetchWorkerResponse): void {
   postMessage(res);
-}
-
-type FlatData = { data: object[] };
-type NestedData = { data: { data: object[] } };
-
-function findData(result: object): object[] {
-  if (typeof result === 'object' && 'data' in result && Array.isArray(result.data)) {
-    return (result as FlatData).data;
-  } else {
-    return (result as NestedData).data.data;
-  }
 }

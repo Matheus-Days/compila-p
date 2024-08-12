@@ -48,22 +48,22 @@
           >Organizar cabeçalhos</mat-checkbox
         >
         @if (loading()) {
-          <cmp-progress-bar class="flex-grow" [progress]="progress()" />
+          <cmp-progress-bar class="flex-grow" [progress]="store.progress()" />
         }
       </div>
     </mat-card-content>
-    @if (message()) {
+    @if (store.message()) {
       <mat-card-footer class="p-4">
-        {{ message() }}
-        {{ results() }}
+        {{ store.message() }}
+        {{ resultsMsg() }}
       </mat-card-footer>
     }
   </mat-card>
 
   @if (showHeadsOrganizer()) {
     <cmp-heads-organizer
-      [heads]="store.itensNotasFiscais().headers"
-      (headsChanged)="store.changeNotasEmpenhosHeadersOrder($any($event))"
+      [heads]="store.headers()"
+      (headsChanged)="store.changeHeadersOrder($any($event))"
     ></cmp-heads-organizer>
   }
 </div>

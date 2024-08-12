@@ -35,6 +35,16 @@
           <cmp-notas-empenhos />
         }
       }
+      @defer (when worksheetOptions().includes('liquidacoes')) {
+        @if (worksheetOptions().includes('liquidacoes')) {
+          <cmp-liquidacoes />
+        }
+      }
+      @defer (when worksheetOptions().includes('np')) {
+        @if (worksheetOptions().includes('np')) {
+          <cmp-notas-pagamentos />
+        }
+      }
     </div>
   }
   @case ('error') {

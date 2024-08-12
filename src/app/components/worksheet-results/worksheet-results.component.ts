@@ -11,7 +11,7 @@ import { WorkbooksStore } from '../../stores/workbooks.store';
 import {
   WORKSHEET_OPTS_LABELS,
   WorksheetOptionObject
-} from '../../stores/workbooks.utils';
+} from '../../stores/worksheet.utils';
 import { MatDividerModule } from '@angular/material/divider';
 
 type WorksheetResult = WorksheetOptionObject & { selected: boolean };
@@ -29,11 +29,11 @@ export class WorksheetResultsComponent implements AfterViewInit {
   list = viewChild.required(MatSelectionList);
 
   worksheetResults = computed<WorksheetResult[]>(() => {
-    return this.store.availableWorksheets().map((worksheet) => {
+    return this.store.worksheetResults().map((worksheet) => {
       return {
-        label: WORKSHEET_OPTS_LABELS[worksheet],
-        value: worksheet,
-        selected: this.store.selectedWorksheetResults().includes(worksheet)
+        label: WORKSHEET_OPTS_LABELS[worksheet.type],
+        value: worksheet.type,
+        selected: this.store.selectedWorksheetResults().includes(worksheet.type)
       };
     });
   });

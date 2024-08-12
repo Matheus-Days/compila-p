@@ -7,7 +7,7 @@ import {
 import { inject } from '@angular/core';
 import { TceQueriesService } from '../services/tce-queries.service';
 import { Municipio } from '../services/tce.types';
-import { WorksheetStoreState } from './workbooks.utils';
+import { WorksheetStoreState } from './worksheet.utils';
 
 type MunicipiosState = {
   municipios: WorksheetStoreState<Municipio>;
