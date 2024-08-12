@@ -17,7 +17,7 @@ import {
 } from './tce.types';
 import { FetchWorkerMessage, SearchParams } from './fetcher.worker';
 import { EnhancedFetchWorkerResponse } from './enhanced-fetch.worker';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { stringifyParams } from './utils';
 
 export type WorkerObservable<T> = Observable<EnhancedFetchWorkerResponse<T>>;
@@ -155,12 +155,12 @@ function fetchAllEnhanced<T>(
 
       worker.postMessage(message);
     }
+  ).pipe(
+    tap({
+      error: () => worker.terminate(),
+      complete: () => worker.terminate()
+    })
   );
-
-  fetchAll$.subscribe({
-    error: () => worker.terminate(),
-    complete: () => worker.terminate()
-  });
 
   return fetchAll$;
 }

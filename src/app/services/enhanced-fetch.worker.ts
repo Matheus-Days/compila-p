@@ -18,7 +18,7 @@ export type EnhancedFetchWorkerResponse<T = object> = {
 
 type ApiResponse = {
   data: {
-    data: object[]
+    data: object[];
     length: number;
     total: number;
   };
@@ -41,11 +41,12 @@ async function fetchAll(
   const result: ApiResponse = await (await fetch(searchQueryUrl)).json();
 
   if (result.data.length === 0) retry += 1;
+  else retry = 0;
 
-  previousResults.push(...result.data.data)
+  previousResults.push(...result.data.data);
   const progress = previousResults.length / result.data.total;
 
-  if (progress === 1 || retry === 1) {
+  if (progress === 1 || retry > 1) {
     sendResponse({ data: previousResults, progress: 1 });
     return;
   }
@@ -58,7 +59,8 @@ async function fetchAll(
       ...searchParams,
       deslocamento: searchParams.deslocamento + 100
     },
-    previousResults
+    previousResults,
+    retry
   );
 }
 
