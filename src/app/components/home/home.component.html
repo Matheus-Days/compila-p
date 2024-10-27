@@ -1,4 +1,66 @@
-<div class="flex flex-col gap-8 p-8">
-  <cmp-table-contratos />
-  <cmp-table-itens-nf />
+<header class="col-span-3 flex h-fit justify-between">
+  <button mat-icon-button (click)="toggleWorksheetOpts()">
+    <mat-icon class="text-white">menu</mat-icon>
+  </button>
+  <button mat-icon-button (click)="toggleWorksheetResults()">
+    <mat-icon class="text-white">download</mat-icon>
+  </button>
+</header>
+
+<div [@opened]="worksheetOptsOpened()" [@slide-left]="worksheetOptsOpened()">
+  <cmp-worksheet-opts class="flex h-full" />
+</div>
+
+@switch (store.municipios().status) {
+  @case ('loading') {
+    <div class="flex flex-col items-center justify-center h-full">
+      <mat-spinner diameter="48"></mat-spinner>
+      <p class="mt-4">Carregando municípios...</p>
+    </div>
+  }
+  @case ('loaded') {
+    <div class="flex flex-col gap-8 p-8">
+      @defer (when worksheetOptions().includes('contratos')) {
+        @if (worksheetOptions().includes('contratos')) {
+          <cmp-contratos-detalhados />
+        }
+      }
+      @defer (when worksheetOptions().includes('inf')) {
+        @if (worksheetOptions().includes('inf')) {
+          <cmp-itens-notas-fiscais />
+        }
+      }
+      @defer (when worksheetOptions().includes('ne')) {
+        @if (worksheetOptions().includes('ne')) {
+          <cmp-notas-empenhos />
+        }
+      }
+      @defer (when worksheetOptions().includes('liquidacoes')) {
+        @if (worksheetOptions().includes('liquidacoes')) {
+          <cmp-liquidacoes />
+        }
+      }
+      @defer (when worksheetOptions().includes('np')) {
+        @if (worksheetOptions().includes('np')) {
+          <cmp-notas-pagamentos />
+        }
+      }
+    </div>
+  }
+  @case ('error') {
+    <div class="flex flex-col items-center justify-center h-full">
+      <mat-icon class="error-icon">error</mat-icon>
+      <p class="mt-4">
+        Servidor do TCE está fora do ar ou sua conexão de internet está
+        instável.
+      </p>
+    </div>
+  }
+}
+
+<div
+  [@opened]="worksheetResultsOpened()"
+  [@slide-right]="worksheetResultsOpened()"
+>
+  <cmp-worksheet-results class="flex flex-col h-full" />
 </div>

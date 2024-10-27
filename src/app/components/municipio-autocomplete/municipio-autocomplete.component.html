@@ -1,0 +1,21 @@
+<mat-form-field>
+  <mat-label>Município</mat-label>
+  <input
+    type="text"
+    placeholder="Digite o nome do município"
+    matInput
+    [formControl]="control()"
+    [matAutocomplete]="autoMunicipios"
+  />
+  <mat-autocomplete
+    #autoMunicipios="matAutocomplete"
+    (optionSelected)="onMunicipioSelected($event)"
+  >
+    @for (municipio of municipios(); track municipio.codigo_municipio) {
+      <mat-option [value]="municipio.nome_municipio"
+        >{{ municipio.codigo_municipio }} -
+        {{ municipio.nome_municipio }}</mat-option
+      >
+    }
+  </mat-autocomplete>
+</mat-form-field>

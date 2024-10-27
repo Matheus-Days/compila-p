@@ -1,0 +1,19 @@
+:host {
+  display: grid;
+  grid-template-columns: auto 1fr minmax(0, auto);
+  grid-template-rows: auto 1fr;
+  min-height: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  background-color: var(--mat-app-background-color);
+}
+
+header {
+  background-color: #343dff;
+}
+.error-icon {
+  color: #ba1a1a;
+  font-size: 5rem;
+  width: 5rem;
+  height: 5rem;
+}

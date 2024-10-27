@@ -1,0 +1,20 @@
+<mat-form-field>
+  <mat-label>{{ label() }}</mat-label>
+  <mat-select [formControl]="control()" [multiple]="multiple()">
+    @if (!disableSelectAll() && multiple()) {
+      <div class="select-all-checkbox">
+        <mat-checkbox (change)="toggleSelectAll()" [checked]="isAllSelected()">
+          Todos os órgãos
+        </mat-checkbox>
+      </div>
+    }
+    @for (ug of unidadesGestoras(); track ug.codigo_unidade_gestora) {
+      <mat-option [value]="ug.codigo_unidade_gestora">
+        {{ ug.codigo_unidade_gestora }} - {{ ug.nome_unidade_gestora }}
+      </mat-option>
+    }
+  </mat-select>
+  @if (hint()) {
+    <mat-hint>{{ hint() }}</mat-hint>
+  }
+</mat-form-field>

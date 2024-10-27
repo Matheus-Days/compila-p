@@ -1,5 +1,7 @@
 /// <reference lib="webworker" />
 
+import { stringifyParams } from './utils';
+
 export type SearchParams = object & {
   deslocamento: number;
 };
@@ -38,14 +40,6 @@ async function fetchAll(
       previousResults
     );
   }
-}
-
-function stringifyParams(params: SearchParams): Record<string, string> {
-  const record: Record<string, string> = {};
-  Object.entries(params).forEach(
-    ([key, value]) => (record[key] = String(value))
-  );
-  return record;
 }
 
 type FlatData = { data: object[] };

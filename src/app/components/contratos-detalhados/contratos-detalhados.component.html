@@ -1,0 +1,70 @@
+<div class="flex flex-col gap-8">
+  <mat-card class="w-full">
+    <mat-card-title>
+      <div class="m-4">Buscar contratações</div>
+    </mat-card-title>
+    <mat-card-content>
+      <form [formGroup]="form" class="flex gap-2">
+        <cmp-municipio-autocomplete
+          [control]="municipioControl"
+          (municipioSelected)="selectedMunicipio.set($event)"
+        />
+
+        <mat-form-field>
+          <mat-label>Selecione um período</mat-label>
+          <mat-date-range-input
+            [formGroup]="dateRangeGroup"
+            [rangePicker]="picker"
+          >
+            <input matStartDate formControlName="start" placeholder="Início" />
+            <input matEndDate formControlName="end" placeholder="Fim" />
+          </mat-date-range-input>
+          <mat-datepicker-toggle
+            matIconSuffix
+            [for]="picker"
+          ></mat-datepicker-toggle>
+          <mat-date-range-picker #picker></mat-date-range-picker>
+
+          @if (dateRangeGroup.controls.start.hasError('matStartDateInvalid')) {
+            <mat-error>Data de início inválida</mat-error>
+          }
+          @if (dateRangeGroup.controls.end.hasError('matEndDateInvalid')) {
+            <mat-error>Data de fim inválida</mat-error>
+          }
+        </mat-form-field>
+      </form>
+
+      <div class="flex gap-4 items-center">
+        <button mat-flat-button [disabled]="form.invalid" (click)="search()">
+          Pesquisar
+        </button>
+
+        <button mat-button [disabled]="form.pristine" (click)="clear()">
+          <mat-icon>cleaning_services</mat-icon>
+          Limpar
+        </button>
+        <mat-checkbox
+          [checked]="showHeadsOrganizer()"
+          (change)="showHeadsOrganizer.set($event.checked)"
+          >Organizar cabeçalhos</mat-checkbox
+        >
+        @if (loading()) {
+          <cmp-progress-bar class="flex-grow" [progress]="progress()" />
+        }
+      </div>
+    </mat-card-content>
+    @if (store.message()) {
+      <mat-card-footer class="p-4">
+        {{ store.message() }}
+        {{ resultsMsg() }}
+      </mat-card-footer>
+    }
+  </mat-card>
+  
+  @if (showHeadsOrganizer()) {
+    <cmp-heads-organizer
+      [heads]="store.headers()"
+      (headsChanged)="store.changeHeadersOrder($any($event))"
+    ></cmp-heads-organizer>
+  }
+</div>

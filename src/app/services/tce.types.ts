@@ -1,12 +1,3 @@
-export type Municipio = {
-  codigo_municipio: string;
-  nome_municipio: string;
-  geoibgeId: string;
-  geonamesId: string;
-}
-
-export type MunicipioQueryParams = Partial<Municipio>;
-
 export type Contrato = {
   codigo_municipio: string,
   data_contrato: string,
@@ -89,6 +80,42 @@ export type ItensNotasFiscaisQueryParams = {
   numero_nota_fiscal?: string;
 }
 
+export type Liquidacao = {
+  codigo_municipio: string,
+  exercicio_orcamento: string, // Beware
+  codigo_orgao: string,
+  codigo_unidade: string,
+  data_emissao_empenho: string,
+  numero_empenho: string,
+  data_liquidacao: string,
+  data_referencia_liquidacao: number, // Beware
+  nome_responsavel_liquidacao: string,
+  numero_sub_empenho_liquidacao: string,
+  valor_liquidado: string,
+  estado_de_estorno: number, // Beware
+  estado_folha: number // Beware
+}
+
+export type LiquidacoesQueryParams = {
+  codigo_municipio: string;
+  exercicio_orcamento: string;
+  quantidade: number;
+  deslocamento: number;
+  codigo_orgao?: string;
+  codigo_unidade?: string;
+  data_liquidacao?: string;
+  data_referencia_liquidacao?: string;
+}
+
+export type Municipio = {
+  codigo_municipio: string;
+  nome_municipio: string;
+  geoibgeId: string;
+  geonamesId: string;
+}
+
+export type MunicipioQueryParams = Partial<Municipio>;
+
 export type NotasEmpenhos = {
   codigo_municipio: string,
   exercicio_orcamento: number,
@@ -126,20 +153,20 @@ export type NotasEmpenhos = {
   codigo_uf: string,
   tipo_fonte: string,
   codigo_fonte: string,
-  dadosEmpenho: {
-    numero_empenho: string,
-    codigo_municipio: string,
-    exercicio_orcamento: number,
-    codigo_orgao: string,
-    codigo_unidade: string,
-    data_emissao_empenho: string,
-    cd_cpf_gestor: string,
-    data_contrato: string,
-    codigo_contrato: string,
-    data_realizacao_licitacao: string,
-    numero_licitacao: string,
-    nota_empenho: string
-  },
+  // dadosEmpenho: {
+  //   numero_empenho: string,
+  //   codigo_municipio: string,
+  //   exercicio_orcamento: number,
+  //   codigo_orgao: string,
+  //   codigo_unidade: string,
+  //   data_emissao_empenho: string,
+  //   cd_cpf_gestor: string,
+  //   data_contrato: string,
+  //   codigo_contrato: string,
+  //   data_realizacao_licitacao: string,
+  //   numero_licitacao: string,
+  //   nota_empenho: string
+  // },
   codigo_contrato: string,
   data_contrato: string,
   numero_licitacao: string
@@ -162,3 +189,52 @@ export type NotasEmpenhosQueryParams = {
   nome_municipio_negociante?: string;
   codigo_uf?: string;
 }
+
+export type NotaPagamento = {
+  codigo_municipio: string,
+  exercicio_orcamento: string, // Beware
+  codigo_orgao: string,
+  codigo_unidade: string,
+  data_emissao_empenho: string, // Date
+  numero_empenho: string,
+  numero_sub_empenho: string,
+  numero_nota_pagamento: string,
+  data_referencia: number, // Beware
+  nu_documento_caixa: string,
+  data_nota_pagamento: string, // Date
+  valor_nota_pagamento: number,
+  valor_empenhado_a_pagar: number,
+  estado_de_estornado: string,
+  cpf_pagador: string,
+  nome_pagador: string
+}
+
+export type NotasPagamentosQueryParams = {
+  codigo_municipio: string;
+  exercicio_orcamento: string;
+  quantidade: number;
+  deslocamento: number;
+  codigo_orgao?: string;
+  codigo_unidade?: string;
+  data_emissao_empenho?: string;
+  numero_empenho?: string;
+  numero_nota_pagamento?: string;
+  data_referencia?: string;
+  data_nota_pagamento?: string;
+}
+
+export type UnidadeGestora = {
+  codigo_municipio: string;
+  exercicio_orcamento: number;
+  codigo_unidade_gestora: number;
+  data_referencia: number;
+  nome_unidade_gestora: string;
+  data_criacao: string;
+  data_extincao: string | null;
+  numero_lei_criacao: string;
+}
+
+export type UnidadesGestorasQueryParams = {
+  codigo_municipio: string;
+  exercicio_orcamento: string;
+};
